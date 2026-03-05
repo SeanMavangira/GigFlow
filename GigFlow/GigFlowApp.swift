@@ -11,7 +11,7 @@ import SwiftUI
 struct GigFlowApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            DashboardPage()
         }
     }
 }
