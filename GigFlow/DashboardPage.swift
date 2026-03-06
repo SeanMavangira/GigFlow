@@ -11,6 +11,8 @@ struct Gig: Identifiable {
 struct DashboardPage: View {
     
     @State var earnings: Double = 0.0
+    @State private var activeItems = 2
+    @State private var pendingItems = 6
     
     @State var gigs: [Gig] = [
         Gig(title: "Edit Video for John", dueDate: Date(), estimatedHours: 2),
@@ -188,8 +190,6 @@ struct DashboardPage: View {
                                         }
                                         .padding(.vertical, 1)
                                     }
-                                    
-                                    Spacer()
                                 }
                                 .listStyle(.plain)
                             }
@@ -200,8 +200,9 @@ struct DashboardPage: View {
                         
                         
                         HStack{
-                            ZStack(alignment: .top){
-                                // Active gigs
+                            // Active gigs
+                            ZStack(alignment: .topLeading){
+                                
                                 RoundedRectangle(cornerRadius: 16)
                                     .frame(width: 180, height: 180)
                                     .foregroundStyle(.white)
@@ -209,28 +210,75 @@ struct DashboardPage: View {
                                     .overlay(RoundedRectangle(cornerRadius: 16)
                                         .stroke(Color.gray, lineWidth: 1)
                                     )
-                                VStack{
+                                VStack(alignment: .leading){
                                     Text("Active gigs")
                                         .bold()
                                         .padding()
-                                    Image(systemName:"clock.fill")
+                                    
+                                    
+                                    HStack{
+                                        Image(systemName:"clock.fill")
+                                            .resizable()
+                                            .frame(width: 50, height: 50)
+                                            .padding()
+                                        
+                                        Text("Active:")
+                                            .bold()
+                                            .font(.title2)
+                                    }
+                                    
+                                    
                                 }
+                                Text("\(activeItems)")
+                                    .font(.largeTitle)
+                                    .bold()
+                                    .offset(x: 125, y: 120)
+                                
                             }
-                            .padding()
-                            
-                            ZStack{
-                                // Pending Payments
+                            // Pending Payments
+                            ZStack(alignment: .topLeading){
+                                
                                 RoundedRectangle(cornerRadius: 16)
+                                
                                     .frame(width: 180, height: 180)
                                     .foregroundStyle(.white)
                                     .shadow(radius: 10)
                                     .overlay(RoundedRectangle(cornerRadius: 16)
                                         .stroke(Color.gray, lineWidth: 1)
                                     )
-                                Text("Pending Payments")
-                                    .bold()
+                                
+                                VStack(alignment: .leading){
+                                    Text("Pending Payments")
+                                        .padding()
+                                        .bold()
+                                    
+                                    
+                                    HStack{
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .resizable()
+                                            .frame(width: 50, height: 50)
+                                            .offset(x: 12, y: 15)
+                                        
+                                        
+                                        Text("Pending:")
+                                            .bold()
+                                            .font(.title2)
+                                            .offset(x: 15, y: 17)
+                                        
+                                    }
+                                    Text("\(pendingItems)")
+                                        .font(.largeTitle)
+                                        .bold()
+                                        .offset(x: 130, y: -2)
+                                    
+                                }
+                                
                             }
+                            
+                            
                         }
+                        
+                        
                     }
                     .padding(.vertical)
                 }
