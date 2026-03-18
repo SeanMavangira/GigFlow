@@ -1,0 +1,46 @@
+**/*.xcuserdata/
+# macOS metadata
+.DS_Store
+
+# Xcode user data (ignore in all projects & workspaces)
+**/xcuserdata/
+
+# Xcode build artifacts
+build/
+DerivedData/
+
+# Xcode state files
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.xcscmblueprint
+*.xccheckout
+
+# App packaging
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager build artifacts
+.build/
+
+# Carthage build artifacts
+Carthage/Build/
+
+# Fastlane outputs
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Code coverage data
+*.gcno
