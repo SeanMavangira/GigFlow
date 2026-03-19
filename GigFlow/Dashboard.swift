@@ -37,8 +37,9 @@ struct Dashboard: View {
                         
                         VStack(alignment: .leading) {
                             Text("Earnings:")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
+                                .font(.title)
+                                .bold()
+                                .foregroundColor(.black)
                             
                             Spacer()
                             
@@ -141,19 +142,32 @@ struct Dashboard: View {
                                 .overlay(alignment: .topLeading){
                                     Text("Active Gigs")
                                         .bold()
-                                        .font(.headline)
+                                        .font(.title2)
                                         .padding()
                                     
                                 }
                             
                                 .overlay(alignment: .center){
-                                    Text("\(activeGigs)")
-                                        .offset(y: 20)
-                                        .bold()
-                                        .font(.largeTitle)
+                                    HStack{
+                                        Text("\(activeGigs)")
+                                            .offset(y: 20)
+                                            .bold()
+                                            .font(.largeTitle)
+                                        Button{
+                                            
+                                        }label: {
+                                            Text("In Progress >")
+                                                .offset(y: 20)
+                                                .font(.headline)
+                                                .foregroundStyle(.black)
+                                        }
+                                    }
+                                    .padding()
                                 }
                         }
+                        
                         Spacer()
+                        
                         // Pending Payments
                         ZStack{
                             RoundedRectangle(cornerRadius: 16)
@@ -168,15 +182,27 @@ struct Dashboard: View {
                                 .overlay(alignment: .topLeading){
                                     Text("Pending Payments")
                                         .bold()
-                                        .font(.headline)
+                                        .font(.title2)
                                         .padding()
                                 }
                             
                                 .overlay(alignment: .center){
-                                    Text("\(activeGigs)")
+                                    HStack{
+                                        Text("\(activeGigs)")
+                                            .offset(y: 20)
+                                            .font(.largeTitle)
+                                            .bold()
+                                        
+                                        Button{
+                                            
+                                        }label: {
+                                            Text("Pending >")
+                                                .font(.headline)
+                                                .foregroundStyle(.black)
+                                        }
                                         .offset(y: 20)
+                                    }
                                 }
-                                
                         }
                     }
                 }
