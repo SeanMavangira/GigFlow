@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct GigFlowApp: App {
+    @State private var data = GigData()
     var body: some Scene {
         WindowGroup {
             Dashboard()
+                .environment(data)
         }
     }
 }
