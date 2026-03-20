@@ -12,7 +12,7 @@ struct GigFlowApp: App {
     @State private var data = GigData()
     var body: some Scene {
         WindowGroup {
-            Dashboard()
+           TabsItem()
                 .environment(data)
         }
     }
