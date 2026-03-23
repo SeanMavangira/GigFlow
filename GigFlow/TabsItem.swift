@@ -19,6 +19,11 @@ struct TabsItem: View {
                 .tabItem{
                     Label("Gigs", systemImage: "briefcase.fill")
                 }
+            
+            TimerPage()
+                .tabItem{
+                    Label("Timer", systemImage: "clock.fill")
+                }
         }
     }
 }
