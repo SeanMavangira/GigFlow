@@ -24,6 +24,12 @@ struct TabsItem: View {
                 .tabItem{
                     Label("Timer", systemImage: "clock.fill")
                 }
+            
+            Earnings()
+                .tabItem{
+                    Label("Earnings", systemImage: "clock.fill")
+                }
+            
         }
     }
 }
