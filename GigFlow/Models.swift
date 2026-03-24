@@ -266,3 +266,10 @@ func timeString(from totalSeconds: Int) -> String {
 }
 
 
+enum Tabs: String, CaseIterable{
+    case dashboard = "Dashboard"
+    case gigs = "Gigs"
+    case timer = "Timer"
+    case earnings = "Earnings"
+}
+
