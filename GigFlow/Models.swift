@@ -114,6 +114,10 @@ class GigData {
     func deleteGig(_ gig: Gig) {
         gigs.removeAll { $0.id == gig.id }
     }
+    
+        var isRunning: Bool = false
+        var timeDone: Int = 0
+        var selectedGig: Gig?
 }
 
 struct GigCard: View {
