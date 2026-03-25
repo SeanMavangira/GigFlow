@@ -169,13 +169,16 @@ struct Gigs: View {
                         }
                     }
                     .safeAreaInset(edge: .bottom) {
-                        HStack{
+                        HStack {
                             Button {
+                               
                                 let finalAmount = Double(amountString) ?? 0.0
-                                let finalPayType: PayType = isHourly ? .hourly(rate: finalAmount) : .fixed
+                                
+                                
+                                let finalPayType: PayType = isHourly ? .hourly(rate: finalAmount) : .fixed(amount: finalAmount)
                                 
                                 if var gigToUpdate = editingGig {
-                                    // UPDATING EXISTING
+                                    
                                     gigToUpdate.title = title
                                     gigToUpdate.clientName = clientName
                                     gigToUpdate.deadline = dueDate
@@ -185,7 +188,7 @@ struct Gigs: View {
                                     
                                     data.update(gigToUpdate)
                                 } else {
-                                    // ADDING NEW
+                                    
                                     let newGig = Gig(
                                         title: title,
                                         clientName: clientName,
@@ -208,20 +211,17 @@ struct Gigs: View {
                                     .cornerRadius(16)
                             }
                             .padding()
-                            
-                            
+
                             Button {
                                 showSheet = false
                             } label: {
-                                Text("cancel")
+                                Text("Cancel") 
                                     .font(.headline)
                                     .frame(width: 150, height: 60)
                                     .background(Color.gray)
                                     .foregroundColor(.white)
                                     .cornerRadius(16)
                             }
-                            
-                            
                         }
                         
                     }

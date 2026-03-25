@@ -26,25 +26,34 @@ struct TimerPage: View {
     
     var currentEarnings: Double {
         guard let gig = data.selectedGig else { return 0.0 }
-        if case .hourly(let rate) = gig.payType {
+        
+        switch gig.payType {
+        case .hourly(let rate):
+            
             return (Double(data.timeDone) / 3600.0) * rate
+        case .fixed(let amount):
+            
+            return amount
         }
-        return 0.0
     }
     
     var body: some View {
         VStack(spacing: 0) {
             
-           
+            
             VStack(alignment: .leading, spacing: 12) {
-
+                
                 
                 Menu {
                     ForEach(hourlyGigs) { gig in
                         Button {
                             self.data.selectedGig = gig
                         } label: {
-                            Text("\(gig.title) ($\(Int(gig.amount))/hr)")
+                            if case .hourly(let rate) = gig.payType {
+                                Text("\(gig.title) ($\(Int(rate))/hr)")
+                            } else {
+                                Text(gig.title)
+                            }
                         }
                     }
                 } label: {
@@ -66,7 +75,7 @@ struct TimerPage: View {
                 }
                 
                 
-                    .padding(.top, 8)
+                .padding(.top, 8)
             }
             .padding(.horizontal)
             .padding(.top, 15)
@@ -165,14 +174,14 @@ struct TimerPage: View {
                 .padding(20) 
             }
             .navigationBarTitleDisplayMode(.inline)
-         }
+        }
         .background(Color(UIColor.systemGray6).ignoresSafeArea())
         .onReceive(systemTimer) { _ in
             if isRunning {
                 data.timeDone += 1
             }
         }
-//        .navigationBarTitleDisplayMode(.inline)
+        //        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

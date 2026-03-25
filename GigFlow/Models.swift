@@ -47,10 +47,9 @@ enum GigPicker: String, CaseIterable, Identifiable {
     var id: String { self.rawValue }
 }
 
-enum PayType {
-    case fixed
+enum PayType: Codable, Equatable {
+    case fixed(amount: Double)  
     case hourly(rate: Double)
-    
     
     var isFixed: Bool {
         if case .fixed = self { return true }
@@ -85,7 +84,7 @@ struct GigRowView: View {
                     .strikethrough(gig.status == .completed)
                     .foregroundColor(gig.status == .completed ? .secondary : .primary)
                 
-                Text("Due Today • 2h left")
+                Text("\(relativeDate(for: gig.deadline))")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -94,15 +93,34 @@ struct GigRowView: View {
         }
         .padding()
     }
+    func relativeDate(for date: Date) -> String {
+        let calendar = Calendar.current
+        
+        if calendar.isDateInToday(date) {
+            return "Due Today"
+        } else if calendar.isDateInTomorrow(date) {
+            return "Due Tomorrow"
+        } else {
+            // Calculates the number of days between now and the deadline
+            let components = calendar.dateComponents([.day], from: .now, to: date)
+            let days = components.day ?? 0
+            
+            if days < 0 {
+                return "\(abs(days)) days overdue"
+            } else {
+                return "Due in \(days) days"
+            }
+        }
+    }
 }
 
 @Observable
 class GigData {
     var gigs: [Gig] = [
-        Gig(title: "Edit Video for John", clientName: "John Doe", amount: 500, deadline: Date(), status: .draft, payType: .fixed),
-        Gig(title: "Write Blog Post", clientName: "Sarah J.", amount: 7, deadline: Date(), status: .pending, payType: .hourly(rate: 30)),
-        Gig(title: "Consultation", clientName: "Mike R.", amount: 100, deadline: Date(), status: .active, payType: .fixed),
-        Gig(title: "Thumbnail Design", clientName: "Vlog Channel", amount: 50, deadline: Date(), status: .completed, payType: .fixed)
+        Gig(title: "Edit Video for John", clientName: "John Doe", amount: 500, deadline: Date(), status: .draft, payType: .fixed(amount: 500)),
+        Gig(title: "Write Blog Post", clientName: "Sarah J.", amount: 7, deadline: Date(), status: .pending, payType: .hourly(rate: 7)),
+        Gig(title: "Consultation", clientName: "Mike R.", amount: 100, deadline: Date(), status: .active, payType: .fixed(amount: 100)),
+        Gig(title: "Thumbnail Design", clientName: "Vlog Channel", amount: 50, deadline: Date(), status: .completed, payType: .fixed(amount: 50))
     ]
     
     func update(_ updatedGig: Gig) {
