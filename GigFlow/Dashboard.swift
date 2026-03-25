@@ -211,6 +211,7 @@ struct Dashboard: View {
                 .padding(.bottom, 20)
             }
         }
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
