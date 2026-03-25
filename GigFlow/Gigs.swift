@@ -65,7 +65,7 @@ struct Gigs: View {
                     
                     ScrollView {
                         VStack(spacing: 25) {
-                             
+                            
                             ForEach(filteredGigs) { gig in
                                 GigCard(gig: gig) {
                                     self.title = gig.title
@@ -78,7 +78,7 @@ struct Gigs: View {
                                     self.showSheet = true
                                 }
                             }
-
+                            
                             
                             
                             Color.clear.frame(height: 1000)
@@ -90,19 +90,19 @@ struct Gigs: View {
                 }
             }
             .overlay(alignment: .bottomTrailing) {
-                    Button {
-                        showSheet = true
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .resizable()
-                            .frame(width: 56, height: 56)
-                            .foregroundStyle(.gray)
-                            .background(Color.white.clipShape(Circle()))
-                            .shadow(radius: 4)
-                    }
-                    .padding(.trailing, 25)
-                    .padding(.bottom, 20)
+                Button {
+                    showSheet = true
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .resizable()
+                        .frame(width: 56, height: 56)
+                        .foregroundStyle(.gray)
+                        .background(Color.white.clipShape(Circle()))
+                        .shadow(radius: 4)
                 }
+                .padding(.trailing, 25)
+                .padding(.bottom, 20)
+            }
             .sheet(isPresented: $showSheet) {
                 NavigationStack{
                     Form {
@@ -116,7 +116,7 @@ struct Gigs: View {
                         
                         Section(header: Text("")){
                             TextField("Client Name", text: $clientName)
-                               
+                            
                         }
                         .frame(minHeight: 30)
                         
@@ -156,15 +156,15 @@ struct Gigs: View {
                             }
                             .pickerStyle(.segmented)
                             .padding(.vertical, 5)
-
-                    
+                            
+                            
                             HStack {
                                 Text("$")
                                     .fontWeight(.bold)
                                     .foregroundColor(.secondary)
                                 
                                 TextField("0.00", text: $amountString)
-                                    .keyboardType(.decimalPad) 
+                                    .keyboardType(.decimalPad)
                             }
                         }
                     }
@@ -172,33 +172,33 @@ struct Gigs: View {
                         HStack{
                             Button {
                                 let finalAmount = Double(amountString) ?? 0.0
-                                    let finalPayType: PayType = isHourly ? .hourly(rate: finalAmount) : .fixed
-
-                                    if var gigToUpdate = editingGig {
-                                        // UPDATING EXISTING
-                                        gigToUpdate.title = title
-                                        gigToUpdate.clientName = clientName
-                                        gigToUpdate.deadline = dueDate
-                                        gigToUpdate.status = selectedGigStatus
-                                        gigToUpdate.amount = finalAmount 
-                                        gigToUpdate.payType = finalPayType
-                                        
-                                        data.update(gigToUpdate)
-                                    } else {
-                                        // ADDING NEW
-                                        let newGig = Gig(
-                                            title: title,
-                                            clientName: clientName,
-                                            amount: finalAmount,
-                                            deadline: dueDate,
-                                            status: selectedGigStatus,
-                                            payType: finalPayType
-                                        )
-                                        data.gigs.append(newGig)
-                                    }
+                                let finalPayType: PayType = isHourly ? .hourly(rate: finalAmount) : .fixed
+                                
+                                if var gigToUpdate = editingGig {
+                                    // UPDATING EXISTING
+                                    gigToUpdate.title = title
+                                    gigToUpdate.clientName = clientName
+                                    gigToUpdate.deadline = dueDate
+                                    gigToUpdate.status = selectedGigStatus
+                                    gigToUpdate.amount = finalAmount
+                                    gigToUpdate.payType = finalPayType
                                     
-                                    showSheet = false
-                                    resetForm()
+                                    data.update(gigToUpdate)
+                                } else {
+                                    // ADDING NEW
+                                    let newGig = Gig(
+                                        title: title,
+                                        clientName: clientName,
+                                        amount: finalAmount,
+                                        deadline: dueDate,
+                                        status: selectedGigStatus,
+                                        payType: finalPayType
+                                    )
+                                    data.gigs.append(newGig)
+                                }
+                                
+                                showSheet = false
+                                resetForm()
                             } label: {
                                 Text(editingGig == nil ? "Add" : "Save")
                                     .font(.headline)
@@ -227,6 +227,7 @@ struct Gigs: View {
                     }
                 }
             }
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
