@@ -146,7 +146,7 @@ struct TimerPage: View {
                             VStack(spacing: 8) {
                                 Text(currentEarnings, format: .currency(code: "USD"))
                                     .font(.system(size: 45, weight: .bold))
-                                    .foregroundStyle(.green)
+                                    .foregroundStyle(.black)
                                 
                                 if let gig = data.selectedGig, case .hourly(let rate) = gig.payType {
                                     Text("@ \(rate, format: .currency(code: "USD"))/hr")
