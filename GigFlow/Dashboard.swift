@@ -7,24 +7,41 @@
 
 import  SwiftUI
 struct Dashboard: View {
-    @State private var earnings = 2150.00
-    @State var activeGigs = 6
+    @Environment(GigData.self) private var data
     
-    @State var sampleGigs = [
-        Gig(title: "Edit Video for John", clientName: "John Doe", amount: 500, deadline: Date(), status: .active, payType: .fixed),
-        Gig(title: "Write Blog Post", clientName: "Sarah J.", amount: 0, deadline: Date(), status: .pending, payType: .hourly(rate: 30)),
-        Gig(title: "Consultation", clientName: "Mike R.", amount: 100, deadline: Date(), status: .active, payType: .fixed),
-        Gig(title: "Thumbnail Design", clientName: "Vlog Channel", amount: 50, deadline: Date(), status: .active, payType: .fixed)
-    ]
+    // Helper to get gigs due exactly today
+    var todayGigs: [Binding<Gig>] {
+        @Bindable var bindableData = data
+        return $bindableData.gigs.filter { $gig in
+            Calendar.current.isDateInToday($gig.deadline.wrappedValue)
+        }
+    }
+
+    // Helper to get gigs due exactly tomorrow
+    var upcomingGigs: [Binding<Gig>] {
+        @Bindable var bindableData = data
+        
+       
+        let calendar = Calendar.current
+        let tomorrow = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: .now) ?? .now)
+        
+       
+        return $bindableData.gigs.filter { $gig in
+            $gig.deadline.wrappedValue >= tomorrow
+        }
+    }
     
     var body: some View {
+       
+       
+        
         ZStack {
             Color(UIColor.systemGray6).ignoresSafeArea()
             
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 25) {
                     
-                    //  Earnings Card
+                    // Earnings Card
                     ZStack {
                         RoundedRectangle(cornerRadius: 16)
                             .foregroundStyle(.white)
@@ -45,7 +62,8 @@ struct Dashboard: View {
                             
                             HStack {
                                 Spacer()
-                                Text("$\(String(format: "%.2f", earnings))")
+                                // Sums up all gig amounts in the array
+                                Text("$\(String(format: "%.2f", data.gigs.reduce(0) { $0 + $1.amount }))")
                                     .font(.system(size: 40, weight: .bold))
                                 Spacer()
                             }
@@ -79,7 +97,8 @@ struct Dashboard: View {
                             
                             ScrollView {
                                 VStack(spacing: 0) {
-                                    ForEach($sampleGigs) { $gig in
+                                    // Uses bindable data to pass bindings to rows
+                                    ForEach(todayGigs) { $gig in
                                         GigRowView(gig: $gig)
                                             .padding(.horizontal)
                                         Divider().padding(.horizontal)
@@ -93,8 +112,8 @@ struct Dashboard: View {
                         .clipped()
                     }
                     
-                    // Upcoming Dealines card
-                    ZStack{
+                    // Upcoming Deadlines Card
+                    ZStack {
                         RoundedRectangle(cornerRadius: 16)
                             .foregroundStyle(.white)
                             .frame(height: 300)
@@ -103,9 +122,9 @@ struct Dashboard: View {
                                 RoundedRectangle(cornerRadius: 16)
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                             )
-                        VStack(alignment: .leading, spacing: 0){
-                            HStack{
-                                Text("Upcoming Dealines")
+                        VStack(alignment: .leading, spacing: 0) {
+                            HStack {
+                                Text("Upcoming Deadlines")
                                     .bold()
                                 Spacer()
                             }
@@ -115,7 +134,7 @@ struct Dashboard: View {
                             
                             ScrollView {
                                 VStack(spacing: 0) {
-                                    ForEach($sampleGigs) { $gig in
+                                    ForEach(upcomingGigs) { $gig in
                                         GigRowView(gig: $gig)
                                             .padding(.horizontal)
                                         Divider().padding(.horizontal)
@@ -126,10 +145,9 @@ struct Dashboard: View {
                         }
                     }
                     
-                   
-                    HStack{
+                    HStack {
                         // Active Gigs Card
-                        ZStack{
+                        ZStack {
                             RoundedRectangle(cornerRadius: 16)
                                 .frame(width: 170, height: 150)
                                 .foregroundStyle(.white)
@@ -138,24 +156,20 @@ struct Dashboard: View {
                                     RoundedRectangle(cornerRadius: 16)
                                         .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                                 )
-                            
-                                .overlay(alignment: .topLeading){
+                                .overlay(alignment: .topLeading) {
                                     Text("Active Gigs")
                                         .bold()
                                         .font(.title2)
                                         .padding()
-                                    
                                 }
-                            
-                                .overlay(alignment: .center){
-                                    HStack{
-                                        Text("\(activeGigs)")
+                                .overlay(alignment: .center) {
+                                    HStack {
+                                        // Dynamic count of gigs
+                                        Text("\(data.gigs.count)")
                                             .offset(y: 20)
                                             .bold()
                                             .font(.largeTitle)
-                                        Button{
-                                            
-                                        }label: {
+                                        Button {} label: {
                                             Text("In Progress >")
                                                 .offset(y: 20)
                                                 .font(.headline)
@@ -169,7 +183,7 @@ struct Dashboard: View {
                         Spacer()
                         
                         // Pending Payments
-                        ZStack{
+                        ZStack {
                             RoundedRectangle(cornerRadius: 16)
                                 .frame(width: 170, height: 150)
                                 .foregroundStyle(.white)
@@ -178,24 +192,20 @@ struct Dashboard: View {
                                     RoundedRectangle(cornerRadius: 16)
                                         .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                                 )
-                            
-                                .overlay(alignment: .topLeading){
+                                .overlay(alignment: .topLeading) {
                                     Text("Pending Payments")
                                         .bold()
                                         .font(.title2)
                                         .padding()
                                 }
-                            
-                                .overlay(alignment: .center){
-                                    HStack{
-                                        Text("\(activeGigs)")
+                                .overlay(alignment: .center) {
+                                    HStack {
+                                        Text("\(data.gigs.count)")
                                             .offset(y: 20)
                                             .font(.largeTitle)
                                             .bold()
                                         
-                                        Button{
-                                            
-                                        }label: {
+                                        Button {} label: {
                                             Text("Pending >")
                                                 .font(.headline)
                                                 .foregroundStyle(.black)
@@ -216,5 +226,7 @@ struct Dashboard: View {
 }
 
 #Preview {
-    Dashboard()
+    let previewData = GigData()
+    return Dashboard()
+            .environment(previewData)
 }
