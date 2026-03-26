@@ -291,3 +291,7 @@ enum Tabs: String, CaseIterable{
     case earnings = "Earnings"
 }
 
+enum EarningsPeriod: String, CaseIterable {
+    case monthly = "This Month"
+    case yearly = "This Year"
+}
