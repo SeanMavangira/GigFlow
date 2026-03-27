@@ -10,8 +10,6 @@
 import Foundation
 import SwiftUI
 
-import Foundation
-
 struct Gig: Identifiable {
     let id = UUID()
     var title: String
@@ -295,3 +293,26 @@ enum EarningsPeriod: String, CaseIterable {
     case monthly = "This Month"
     case yearly = "This Year"
 }
+
+extension Date {
+    var isInCurrentMonth: Bool {
+        let calendar = Calendar.current
+        let now = Date()
+        return calendar.component(.year, from: self) == calendar.component(.year, from: now)
+        && calendar.component(.month, from: self) == calendar.component(.month, from: now)
+    }
+
+    var isInCurrentYear: Bool {
+        let calendar = Calendar.current
+        let now = Date()
+        return calendar.component(.year, from: self) == calendar.component(.year, from: now)
+    }
+}
+
+struct PieSegment: Identifiable {
+    let id = UUID()
+    let category: String
+    let amount: Double
+    let color: Color
+}
+

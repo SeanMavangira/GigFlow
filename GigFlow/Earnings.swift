@@ -8,9 +8,30 @@
 import SwiftUI
 import Charts
 
+
 struct Earnings: View {
     @State private var selectedPeriod: EarningsPeriod = .monthly
     @Environment(GigData.self) private var data
+    
+    var totalEarned: Double {
+        if selectedPeriod == .monthly {
+            return data.gigs.filter { $0.deadline.isInCurrentMonth }.reduce(0) { $0 + $1.amount }
+        } else {
+            return data.gigs.filter { $0.deadline.isInCurrentYear }.reduce(0) { $0 + $1.amount }
+        }
+    }
+    
+    var pieData: [PieSegment] {
+        let paid = data.gigs.filter { $0.isPaid }.reduce(0) { $0 + $1.amount }
+        let pending = data.gigs.filter { !$0.isPaid }.reduce(0) { $0 + $1.amount }
+        
+        
+        return [
+            PieSegment(category: "Paid", amount: paid, color: .green),
+            PieSegment(category: "Pending", amount: pending, color: .orange)
+        ]
+    }
+    
     var body: some View {
         ZStack{
             Color(UIColor.systemGray6).ignoresSafeArea()
@@ -32,7 +53,8 @@ struct Earnings: View {
                 ScrollView{
                     VStack{
                         RoundedRectangle(cornerRadius: 16)
-                            .frame(width: 380, height: 320)
+                            .frame(height: 320)
+                            .padding()
                             .foregroundStyle(.white)
                             .shadow(radius: 5)
                             .overlay(alignment: .topLeading) {
@@ -43,7 +65,7 @@ struct Earnings: View {
                                         .bold()
                                         .foregroundStyle(.black)
                                     
-                                    Text("$\(String(format: "%.2f", 2150.00))")
+                                    Text("$\(String(format: "%.2f", totalEarned))")
                                         .font(.system(size: 40, weight: .bold))
                                         .padding(.bottom, 4)
                                     
@@ -69,7 +91,7 @@ struct Earnings: View {
                                     
                                     Spacer(minLength: 20)
                                     
-                                    // 4. Bar Chart
+                                    //  Bar Chart
                                     Chart {
                                         BarMark(x: .value("Week", "Week 1"), y: .value("Amount", 400))
                                         BarMark(x: .value("Week", "Week 2"), y: .value("Amount", 750))
@@ -86,7 +108,7 @@ struct Earnings: View {
                                                 .foregroundStyle(.black)
                                         }
                                     }
-                                   
+                                    
                                     .chartYAxis {
                                         AxisMarks(position: .leading, values: .automatic) { value in
                                             AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [5, 5]))
@@ -105,16 +127,54 @@ struct Earnings: View {
                                 .padding(24)
                             }
                         Color.clear.frame(height: 50)
-                        VStack(alignment: .leading){
+                        VStack(alignment: .leading, spacing: 20) {
+                            // 1. Your Header
                             Text("Payment Status")
                                 .font(.title2)
                                 .bold()
-                            
+
+                            // 2. The Chart and Legend Row
+                            HStack(spacing: 30) {
+                                
+                                // Donut Chart
+                                Chart {
+                                    ForEach(pieData) { segment in
+                                        SectorMark(
+                                            angle: .value("Amount", segment.amount),
+                                            innerRadius: .ratio(0.65), 
+                                            angularInset: 2
+                                        )
+                                        .foregroundStyle(segment.color)
+                                        .cornerRadius(6)
+                                    }
+                                }
+                                .frame(width: 140, height: 140)
+
+                         
+                                VStack(alignment: .leading, spacing: 12) {
+                                    ForEach(pieData) { segment in
+                                        HStack(spacing: 8) {
+                                            Circle()
+                                                .fill(segment.color)
+                                                .frame(width: 10, height: 10)
+                                            
+                                            Text(segment.category)
+                                                .font(.callout)
+                                                .foregroundStyle(.secondary)
+                                            
+                                            Spacer()
+                                            
+                                            Text("$\(Int(segment.amount))")
+                                                .font(.callout.bold())
+                                        }
+                                    }
+                                }
+                            }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 24)
                         
-                        
+                      
                         
                     }
                     .padding(.top, 16)
