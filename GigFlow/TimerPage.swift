@@ -8,8 +8,6 @@
 import SwiftUI
 internal import Combine
 
-import SwiftUI
-internal import Combine
 
 struct TimerPage: View {
     @Environment(GigData.self) private var data
@@ -27,15 +25,18 @@ struct TimerPage: View {
     var currentEarnings: Double {
         guard let gig = data.selectedGig else { return 0.0 }
         
+        
+        let totalSeconds = gig.timeSpentInSeconds + Double(data.timeDone)
+        
         switch gig.payType {
         case .hourly(let rate):
-            
-            return (Double(data.timeDone) / 3600.0) * rate
+            return (totalSeconds / 3600.0) * rate
         case .fixed(let amount):
-            
             return amount
         }
     }
+    
+    @State private var showStatusAlert = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -104,18 +105,32 @@ struct TimerPage: View {
                         }
                     }
                     
-                    // Start/Stop Button
+                    
                     Button {
-                        isRunning.toggle()
-                        if !isRunning, var gig = data.selectedGig {
-                            gig.timeSpentInSeconds += Double(data.timeDone)
-                            data.update(gig)
+                        if let gig = data.selectedGig {
+                            
+                            if isRunning {
+                                isRunning = false
+                                var updatedGig = gig
+                                updatedGig.timeSpentInSeconds += Double(data.timeDone)
+                                data.update(updatedGig)
+                                data.timeDone = 0
+                            }
+                           
+                            else if gig.status == .active {
+                                isRunning = true
+                            }
+                           
+                            else {
+                                showStatusAlert = true
+                            }
                         }
                     } label: {
                         ZStack {
                             Circle()
                                 .frame(width: 140)
-                                .foregroundStyle(isRunning ? .red : .gray)
+                                
+                                .foregroundStyle(isRunning ? .red : (data.selectedGig?.status == .active ? .blue : .gray))
                                 .shadow(radius: 4)
                             
                             VStack(spacing: 4) {
@@ -127,65 +142,70 @@ struct TimerPage: View {
                             .foregroundColor(.white)
                         }
                     }
-                    .disabled(data.selectedGig == nil)
+                   
                     .opacity(data.selectedGig == nil ? 0.5 : 1.0)
-                    
-                    // Reset Button
-                    Button {
-                        isRunning = false
-                        data.timeDone = 0
-                    } label: {
-                        Text("Reset Timer")
-                            .font(.subheadline)
-                            .bold()
-                            .foregroundColor(.gray)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 20)
-                            .background(Capsule().stroke(Color.gray.opacity(0.3), lineWidth: 1))
-                    }
-                    
-                    // Earnings Card
-                    VStack(alignment: .leading, spacing: 15) {
-                        Text("Earnings")
-                            .font(.title2)
-                            .bold()
                         
-                        HStack {
-                            Spacer()
-                            VStack(spacing: 8) {
-                                Text(currentEarnings, format: .currency(code: "USD"))
-                                    .font(.system(size: 45, weight: .bold))
-                                    .foregroundStyle(.black)
-                                
-                                if let gig = data.selectedGig, case .hourly(let rate) = gig.payType {
-                                    Text("@ \(rate, format: .currency(code: "USD"))/hr")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            Spacer()
+                       
+                        Button {
+                            isRunning = false
+                            data.timeDone = 0
+                        } label: {
+                            Text("Reset Timer")
+                                .font(.subheadline)
+                                .bold()
+                                .foregroundColor(.gray)
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 20)
+                                .background(Capsule().stroke(Color.gray.opacity(0.3), lineWidth: 1))
                         }
+                        
+                        // Earnings Card
+                        VStack(alignment: .leading, spacing: 15) {
+                            Text("Earnings")
+                                .font(.title2)
+                                .bold()
+                            
+                            HStack {
+                                Spacer()
+                                VStack(spacing: 8) {
+                                    Text(currentEarnings, format: .currency(code: "USD"))
+                                        .font(.system(size: 45, weight: .bold))
+                                        .foregroundStyle(.black)
+                                    
+                                    if let gig = data.selectedGig, case .hourly(let rate) = gig.payType {
+                                        Text("@ \(rate, format: .currency(code: "USD"))/hr")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                Spacer()
+                            }
+                        }
+                        .padding()
+                        .background(RoundedRectangle(cornerRadius: 16).fill(.white))
+                        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+                        
                     }
-                    .padding()
-                    .background(RoundedRectangle(cornerRadius: 16).fill(.white))
-                    .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
-                    
+                    .padding(20)
+                    .alert("Gig Not Active", isPresented: $showStatusAlert) {
+                        Button("OK", role: .cancel) { }
+                    } message: {
+                        Text("Please make sure the gig status is set to 'Active' in the Gigs page before starting the timer.")
+                    }
                 }
-                .padding(20) 
+                .navigationBarTitleDisplayMode(.inline)
             }
-            .navigationBarTitleDisplayMode(.inline)
-        }
-        .background(Color(UIColor.systemGray6).ignoresSafeArea())
-        .onReceive(systemTimer) { _ in
-            if isRunning {
-                data.timeDone += 1
+            .background(Color(UIColor.systemGray6).ignoresSafeArea())
+            .onReceive(systemTimer) { _ in
+                if isRunning {
+                    data.timeDone += 1
+                }
             }
+            //        .navigationBarTitleDisplayMode(.inline)
         }
-        //        .navigationBarTitleDisplayMode(.inline)
     }
-}
-
-
+    
+    
 
 #Preview {
     TimerPage()

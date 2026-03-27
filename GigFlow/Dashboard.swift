@@ -8,40 +8,33 @@
 import  SwiftUI
 struct Dashboard: View {
     @Environment(GigData.self) private var data
-    
-    // Helper to get gigs due exactly today
     var todayGigs: [Binding<Gig>] {
         @Bindable var bindableData = data
         return $bindableData.gigs.filter { $gig in
             Calendar.current.isDateInToday($gig.deadline.wrappedValue)
         }
     }
-
-    // Helper to get gigs due exactly tomorrow
+    
     var upcomingGigs: [Binding<Gig>] {
         @Bindable var bindableData = data
-        
-       
         let calendar = Calendar.current
         let tomorrow = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: .now) ?? .now)
         
-       
         return $bindableData.gigs.filter { $gig in
             $gig.deadline.wrappedValue >= tomorrow
         }
     }
     
+
     var body: some View {
-       
-       
         
         ZStack {
             Color(UIColor.systemGray6).ignoresSafeArea()
             
-            ScrollView(.vertical, showsIndicators: false) {
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 25) {
                     
-                    // Earnings Card
+                    
                     ZStack {
                         RoundedRectangle(cornerRadius: 16)
                             .foregroundStyle(.white)
@@ -62,8 +55,7 @@ struct Dashboard: View {
                             
                             HStack {
                                 Spacer()
-                                // Sums up all gig amounts in the array
-                                Text("$\(String(format: "%.2f", data.gigs.reduce(0) { $0 + $1.amount }))")
+                                Text("$\(String(format: "%.2f", data.gigs.filter { $0.status == .completed }.reduce(0) { $0 + $1.amount }))")
                                     .font(.system(size: 40, weight: .bold))
                                 Spacer()
                             }
@@ -97,7 +89,6 @@ struct Dashboard: View {
                             
                             ScrollView {
                                 VStack(spacing: 0) {
-                                    // Uses bindable data to pass bindings to rows
                                     ForEach(todayGigs) { $gig in
                                         GigRowView(gig: $gig)
                                             .padding(.horizontal)
@@ -146,7 +137,7 @@ struct Dashboard: View {
                     }
                     
                     HStack {
-                        // Active Gigs Card
+                        
                         ZStack {
                             RoundedRectangle(cornerRadius: 16)
                                 .frame(width: 170, height: 150)
@@ -164,17 +155,18 @@ struct Dashboard: View {
                                 }
                                 .overlay(alignment: .center) {
                                     HStack {
-                                        // Dynamic count of gigs
-                                        Text("\(data.gigs.count)")
+                                        Text("\(data.gigs.filter { $0.status == .active }.count)")
                                             .offset(y: 20)
                                             .bold()
                                             .font(.largeTitle)
-                                        Button {} label: {
-                                            Text("In Progress >")
-                                                .offset(y: 20)
-                                                .font(.headline)
-                                                .foregroundStyle(.black)
-                                        }
+//                                        Button {
+//                                            Gigs(selectedStatus: .active)
+//                                        } label: {
+//                                            Text("In Progress >")
+//                                                .offset(y: 20)
+//                                                .font(.headline)
+//                                                .foregroundStyle(.black)
+//                                        }
                                     }
                                     .padding()
                                 }
@@ -182,7 +174,7 @@ struct Dashboard: View {
                         
                         Spacer()
                         
-                        // Pending Payments
+                        
                         ZStack {
                             RoundedRectangle(cornerRadius: 16)
                                 .frame(width: 170, height: 150)
@@ -200,17 +192,20 @@ struct Dashboard: View {
                                 }
                                 .overlay(alignment: .center) {
                                     HStack {
-                                        Text("\(data.gigs.count)")
+                                        Text("\(data.gigs.filter { $0.status == .pending }.count)")
                                             .offset(y: 20)
                                             .font(.largeTitle)
                                             .bold()
                                         
-                                        Button {} label: {
-                                            Text("Pending >")
-                                                .font(.headline)
-                                                .foregroundStyle(.black)
-                                        }
-                                        .offset(y: 20)
+//                                       Button {
+//                                            Gigs(selectedStatus: .pending)
+//                                        } label: {
+//                                            Text("Pending >")
+//                                                .font(.headline)
+//                                                .foregroundStyle(.blue)
+//                                                .background(Color.black.opacity(0.001))
+//                                        }
+//                                        .offset(y: 20)
                                     }
                                 }
                         }
@@ -225,8 +220,10 @@ struct Dashboard: View {
     }
 }
 
+
 #Preview {
     let previewData = GigData()
     return Dashboard()
-            .environment(previewData)
+        .environment(previewData)
 }
+
