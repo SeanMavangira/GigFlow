@@ -108,28 +108,27 @@ struct TimerPage: View {
                     
                     Button {
                         if let gig = data.selectedGig {
-                            
                             if isRunning {
+                               
                                 isRunning = false
                                 var updatedGig = gig
                                 updatedGig.timeSpentInSeconds += Double(data.timeDone)
                                 data.update(updatedGig)
                                 data.timeDone = 0
-                            }
-                           
-                            else if gig.status == .active {
-                                isRunning = true
-                            }
-                           
-                            else {
-                                showStatusAlert = true
+                            } else {
+                               
+                                if gig.status == .active {
+                                    isRunning = true
+                                } else {
+                                    
+                                    showStatusAlert = true
+                                }
                             }
                         }
                     } label: {
                         ZStack {
                             Circle()
                                 .frame(width: 140)
-                                
                                 .foregroundStyle(isRunning ? .red : (data.selectedGig?.status == .active ? .blue : .gray))
                                 .shadow(radius: 4)
                             
