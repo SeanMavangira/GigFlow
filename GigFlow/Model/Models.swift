@@ -9,24 +9,26 @@
 
 import Foundation
 import SwiftUI
-
+import Charts
 struct Gig: Identifiable {
     let id = UUID()
     var title: String
     var clientName: String
-    var amount: Double 
     var deadline: Date
     var status: GigPicker
     var payType: PayType
     var timeSpentInSeconds: TimeInterval = 0
     var isPaid: Bool = false
-    
-    var estimatedEarnings: Double {
-        if case .hourly(let rate) = payType {
-            return (timeSpentInSeconds / 3600) * rate
+    var amount: Double {
+        switch payType {
+        case .hourly(let rate):
+            return (timeSpentInSeconds / 3600.0) * rate
+        case .fixed(let fixedAmount):
+            return fixedAmount
         }
-        return amount
     }
+    
+
 }
 
 enum GigStatus: String, CaseIterable {
@@ -115,10 +117,14 @@ struct GigRowView: View {
 @Observable
 class GigData {
     var gigs: [Gig] = [
-        Gig(title: "Edit Video for John", clientName: "John Doe", amount: 500, deadline: Date(), status: .draft, payType: .fixed(amount: 500)),
-        Gig(title: "Write Blog Post", clientName: "Sarah J.", amount: 7, deadline: Date(), status: .pending, payType: .hourly(rate: 7)),
-        Gig(title: "Consultation", clientName: "Mike R.", amount: 100, deadline: Date(), status: .active, payType: .fixed(amount: 100)),
-        Gig(title: "Thumbnail Design", clientName: "Vlog Channel", amount: 50, deadline: Date(), status: .completed, payType: .fixed(amount: 50))
+        
+        Gig(title: "Edit Video for John", clientName: "John Doe", deadline: Date(), status: .draft, payType: .fixed(amount: 500), isPaid: false),
+        
+        Gig(title: "Write Blog Post", clientName: "Sarah J.", deadline: Date(), status: .draft, payType: .hourly(rate: 7), isPaid: false),
+        
+        Gig(title: "Consultation", clientName: "Mike R.", deadline: Date(), status: .draft, payType: .fixed(amount: 100), isPaid: false),
+        
+        Gig(title: "Thumbnail Design", clientName: "Vlog Channel", deadline: Date(), status: .draft, payType: .fixed(amount: 50), isPaid: true)
     ]
     
     func update(_ updatedGig: Gig) {
@@ -131,9 +137,9 @@ class GigData {
         gigs.removeAll { $0.id == gig.id }
     }
     
-        var isRunning: Bool = false
-        var timeDone: Int = 0
-        var selectedGig: Gig?
+    var isRunning: Bool = false
+    var timeDone: Int = 0
+    var selectedGig: Gig?
 }
 
 struct GigCard: View {
@@ -281,7 +287,6 @@ func timeString(from totalSeconds: Int) -> String {
     return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
 }
 
-
 enum Tabs: String, CaseIterable{
     case dashboard = "Dashboard"
     case gigs = "Gigs"
@@ -315,4 +320,157 @@ struct PieSegment: Identifiable {
     let amount: Double
     let color: Color
 }
+
+struct TotalEarnedCard: View {
+    let selectedPeriod: EarningsPeriod
+    @Environment(GigData.self) private var data
+    
+    var paidTotal: Double {
+        data.gigs.filter { gig in
+            let matches = selectedPeriod == .monthly ? gig.deadline.isInCurrentMonth : gig.deadline.isInCurrentYear
+            return matches && gig.status == .completed
+        }.reduce(0.0) { $0 + $1.amount }
+    }
+    
+    var pendingTotal: Double {
+        data.gigs.filter { gig in
+            let matches = selectedPeriod == .monthly ? gig.deadline.isInCurrentMonth : gig.deadline.isInCurrentYear
+            return matches && (gig.status == .pending || gig.status == .active)
+        }.reduce(0.0) { $0 + $1.amount }
+    }
+    
+    var chartData: [(label: String, amount: Double)] {
+        let calendar = Calendar.current
+        let filteredGigs = data.gigs.filter { gig in
+            let matchesPeriod = selectedPeriod == .monthly ? gig.deadline.isInCurrentMonth : gig.deadline.isInCurrentYear
+            return matchesPeriod && gig.status == .completed
+        }
+        
+        // Group by Week if Monthly, group by Month if Yearly
+        let grouped = Dictionary(grouping: filteredGigs) { (gig: Gig) -> String in
+            if selectedPeriod == .monthly {
+                return "Week \(calendar.component(.weekOfMonth, from: gig.deadline))"
+            } else {
+                return gig.deadline.formatted(.dateTime.month(.abbreviated))
+            }
+        }
+        
+        return grouped.map { (key: String, value: [Gig]) in
+            (label: key, amount: value.reduce(0.0) { $0 + $1.amount })
+        }.sorted { lhs, rhs in
+            // A simple sort—for a production app, you'd sort by the actual Date object
+            lhs.label < rhs.label
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Total Earned").font(.headline).foregroundStyle(.secondary)
+            Text(paidTotal, format: .currency(code: "USD")).font(.system(size: 34, weight: .bold))
+            
+            HStack(spacing: 15) {
+                Label("Paid: \(paidTotal, format: .currency(code: "USD"))", systemImage: "circle.fill").foregroundStyle(.green)
+                Label("Pending: \(pendingTotal, format: .currency(code: "USD"))", systemImage: "circle.fill").foregroundStyle(.orange)
+            }
+            .font(.caption.bold())
+            
+            Chart {
+                ForEach(chartData, id: \.label) { dataPoint in
+                    BarMark(x: .value("Week", dataPoint.label), y: .value("Amount", dataPoint.amount))
+                        .foregroundStyle(.green.gradient).cornerRadius(4)
+                }
+            }
+            .frame(height: 150).padding(.top, 10)
+        }
+        .padding().background(RoundedRectangle(cornerRadius: 16).fill(.white)).padding(.horizontal)
+    }
+}
+
+struct PaymentStatusCard: View {
+    let selectedPeriod: EarningsPeriod
+    @Environment(GigData.self) private var data
+    
+    var body: some View {
+        let paid = data.gigs.filter { (selectedPeriod == .monthly ? $0.deadline.isInCurrentMonth : $0.deadline.isInCurrentYear) && $0.status == .completed }.reduce(0.0) { $0 + $1.amount }
+        let pending = data.gigs.filter { (selectedPeriod == .monthly ? $0.deadline.isInCurrentMonth : $0.deadline.isInCurrentYear) && ($0.status == .pending || $0.status == .active) }.reduce(0.0) { $0 + $1.amount }
+        
+        let pieData = [
+            PieSegment(category: "Paid", amount: paid, color: .green),
+            PieSegment(category: "Pending", amount: pending, color: .orange)
+        ]
+
+        return VStack(alignment: .leading, spacing: 20) {
+            Text("Payment Status").font(.headline)
+            HStack(spacing: 30) {
+                Chart(pieData) { segment in
+                    SectorMark(angle: .value("Amount", segment.amount), innerRadius: .ratio(0.65), angularInset: 2)
+                        .foregroundStyle(segment.color).cornerRadius(5)
+                }
+                .frame(width: 120, height: 120)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(pieData) { segment in
+                        HStack {
+                            Circle().fill(segment.color).frame(width: 8, height: 8)
+                            Text(segment.category).font(.caption).foregroundStyle(.secondary)
+                            Spacer()
+                            Text(segment.amount, format: .currency(code: "USD")).font(.caption.bold()).monospacedDigit()
+                        }
+                    }
+                }
+            }
+        }
+        .padding().background(RoundedRectangle(cornerRadius: 16).fill(.white)).padding(.horizontal)
+    }
+}
+
+struct RecentTransactionsCard: View {
+    let selectedPeriod: EarningsPeriod
+    @Environment(GigData.self) private var data
+    
+    var recentTransactions: [Gig] {
+        data.gigs.filter { gig in
+            let matchesPeriod = selectedPeriod == .monthly ? gig.deadline.isInCurrentMonth : gig.deadline.isInCurrentYear
+            let isValidStatus = gig.status == .completed || gig.status == .pending || gig.status == .active
+            return matchesPeriod && isValidStatus
+        }.sorted(by: { $0.deadline > $1.deadline })
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            Text("Recent Transactions").font(.headline)
+            
+            if recentTransactions.isEmpty {
+                ContentUnavailableView("No transactions yet", systemImage: "tray").frame(height: 200)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(recentTransactions.prefix(5))) { gig in
+                        TransactionRow(gig: gig)
+                        if gig.id != recentTransactions.prefix(5).last?.id { Divider() }
+                    }
+                }
+            }
+        }
+        .padding().background(RoundedRectangle(cornerRadius: 16).fill(.white)).padding(.horizontal).shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+    }
+}
+
+struct TransactionRow: View {
+    let gig: Gig
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(gig.title).font(.subheadline.bold())
+                Text(gig.deadline.formatted(date: .abbreviated, time: .omitted)).font(.caption2).foregroundStyle(.secondary)
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(gig.amount, format: .currency(code: "USD")).font(.subheadline.bold()).foregroundStyle(gig.status == .completed ? Color.primary : Color.orange)
+                Text(gig.status.rawValue.capitalized).font(.system(size: 10, weight: .bold)).padding(.horizontal, 6).padding(.vertical, 2).background((gig.status == .completed ? Color.green : Color.orange).opacity(0.1)).foregroundStyle(gig.status == .completed ? .green : .orange).clipShape(Capsule())
+            }
+        }
+        .padding(.vertical, 12)
+    }
+}
+
 
