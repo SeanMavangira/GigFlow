@@ -10,7 +10,7 @@ import SwiftUI
 struct Gigs: View {
     
     @State var selectedStatus: GigStatus = .all
-    
+    @State private var isPaid = false
     @State private var showSheet = false
     @State private var title = ""
     @State private var clientName = ""
@@ -25,7 +25,6 @@ struct Gigs: View {
         if selectedStatus == .all {
             return data.gigs
         } else {
-            
             return data.gigs.filter { $0.status.rawValue == selectedStatus.rawValue }
         }
     }
@@ -44,19 +43,28 @@ struct Gigs: View {
         let finalAmount = Double(amountString) ?? 0.0
         let finalPayType: PayType = isHourly ? .hourly(rate: finalAmount) : .fixed(amount: finalAmount)
         
+        // logic: If status is completed, it counts as paid for the charts
+        let markedAsPaid = (selectedGigStatus == .completed)
+        
         if let gig = editingGig {
-            
             var updated = gig
             updated.title = title
             updated.clientName = clientName
             updated.deadline = dueDate
             updated.status = selectedGigStatus
-            updated.amount = finalAmount
             updated.payType = finalPayType
+            updated.isPaid = markedAsPaid
+            
             data.update(updated)
         } else {
-            
-            let newGig = Gig(title: title, clientName: clientName, amount: finalAmount, deadline: dueDate, status: selectedGigStatus, payType: finalPayType)
+            let newGig = Gig(
+                title: title,
+                clientName: clientName,
+                deadline: dueDate,
+                status: selectedGigStatus,
+                payType: finalPayType,
+                isPaid: markedAsPaid
+            )
             data.gigs.append(newGig)
         }
     }
@@ -68,7 +76,6 @@ struct Gigs: View {
     }
     
     var body: some View {
-        
         ZStack {
             Color(UIColor.systemGray6).ignoresSafeArea()
             
@@ -90,14 +97,23 @@ struct Gigs: View {
                     VStack(spacing: 25) {
                         ForEach(filteredGigs) { gig in
                             GigCard(gig: gig) {
-                                
+                                // --- FIX: Extracting values for editing ---
+                                self.editingGig = gig
                                 self.title = gig.title
                                 self.clientName = gig.clientName
                                 self.dueDate = gig.deadline
                                 self.selectedGigStatus = gig.status
-                                self.amountString = String(format: "%.2f", gig.amount)
-                                self.isHourly = !gig.payType.isFixed
-                                self.editingGig = gig
+                                
+                                // Logic to get the raw number back out of the PayType enum
+                                switch gig.payType {
+                                case .fixed(let amt):
+                                    self.amountString = String(format: "%.2f", amt)
+                                    self.isHourly = false
+                                case .hourly(let rate):
+                                    self.amountString = String(format: "%.2f", rate)
+                                    self.isHourly = true
+                                }
+                                
                                 self.showSheet = true
                             }
                         }
@@ -108,7 +124,6 @@ struct Gigs: View {
                 }
             }
         }
-       
         .overlay(alignment: .bottomTrailing) {
             Button {
                 resetForm()
@@ -125,7 +140,6 @@ struct Gigs: View {
             .padding(.bottom, 20)
         }
         .sheet(isPresented: $showSheet) {
-            
             NavigationStack {
                 Form {
                     Section(
@@ -157,6 +171,10 @@ struct Gigs: View {
                             Text("$").bold().foregroundColor(.secondary)
                             TextField("0.00", text: $amountString)
                                 .keyboardType(.decimalPad)
+                            
+                            if isHourly {
+                                Text("/ hr").foregroundColor(.secondary)
+                            }
                         }
                     }
                 }
@@ -177,8 +195,6 @@ struct Gigs: View {
             }
         }
     }
-    
-    
 }
 
 #Preview {
