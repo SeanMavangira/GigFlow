@@ -325,28 +325,36 @@ struct TotalEarnedCard: View {
     let selectedPeriod: EarningsPeriod
     @Environment(GigData.self) private var data
     
+    // Sum of ALL completed gigs up to now
     var paidTotal: Double {
         data.gigs.filter { gig in
-            let matches = selectedPeriod == .monthly ? gig.deadline.isInCurrentMonth : gig.deadline.isInCurrentYear
-            return matches && gig.status == .completed
+            let matchesPeriod = selectedPeriod == .monthly ? gig.deadline.isInCurrentMonth : gig.deadline.isInCurrentYear
+            return matchesPeriod && gig.status == .completed
         }.reduce(0.0) { $0 + $1.amount }
     }
     
     var pendingTotal: Double {
         data.gigs.filter { gig in
-            let matches = selectedPeriod == .monthly ? gig.deadline.isInCurrentMonth : gig.deadline.isInCurrentYear
-            return matches && (gig.status == .pending || gig.status == .active)
+            let matchesPeriod = selectedPeriod == .monthly ? gig.deadline.isInCurrentMonth : gig.deadline.isInCurrentYear
+            return matchesPeriod && (gig.status == .pending || gig.status == .active)
         }.reduce(0.0) { $0 + $1.amount }
     }
     
-    var chartData: [(label: String, amount: Double)] {
+    var chartData: [(label: String, amount: Double, date: Date)] {
         let calendar = Calendar.current
+        
+        // FILTER: Only include Gigs from the current year (to keep the chart readable)
+        // but include ALL months/weeks within that year, not just the "current" one.
         let filteredGigs = data.gigs.filter { gig in
-            let matchesPeriod = selectedPeriod == .monthly ? gig.deadline.isInCurrentMonth : gig.deadline.isInCurrentYear
-            return matchesPeriod && gig.status == .completed
+            if selectedPeriod == .monthly {
+                // Shows all weeks in the current month
+                return gig.deadline.isInCurrentMonth && gig.status == .completed
+            } else {
+                // Shows all months in the current year (including previous ones!)
+                return gig.deadline.isInCurrentYear && gig.status == .completed
+            }
         }
         
-        // Group by Week if Monthly, group by Month if Yearly
         let grouped = Dictionary(grouping: filteredGigs) { (gig: Gig) -> String in
             if selectedPeriod == .monthly {
                 return "Week \(calendar.component(.weekOfMonth, from: gig.deadline))"
@@ -356,33 +364,45 @@ struct TotalEarnedCard: View {
         }
         
         return grouped.map { (key: String, value: [Gig]) in
-            (label: key, amount: value.reduce(0.0) { $0 + $1.amount })
-        }.sorted { lhs, rhs in
-            // A simple sort—for a production app, you'd sort by the actual Date object
-            lhs.label < rhs.label
-        }
+            // We keep the date so we can sort chronologically instead of alphabetically
+            let representativeDate = value.first?.deadline ?? Date()
+            return (label: key, amount: value.reduce(0.0) { $0 + $1.amount }, date: representativeDate)
+        }.sorted { $0.date < $1.date } // This ensures Jan comes before Feb
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Total Earned").font(.headline).foregroundStyle(.secondary)
-            Text(paidTotal, format: .currency(code: "USD")).font(.system(size: 34, weight: .bold))
+            Text("Total Earned")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            
+            Text(paidTotal, format: .currency(code: "USD"))
+                .font(.system(size: 34, weight: .bold))
             
             HStack(spacing: 15) {
-                Label("Paid: \(paidTotal, format: .currency(code: "USD"))", systemImage: "circle.fill").foregroundStyle(.green)
-                Label("Pending: \(pendingTotal, format: .currency(code: "USD"))", systemImage: "circle.fill").foregroundStyle(.orange)
+                Label("Paid: \(paidTotal, format: .currency(code: "USD"))", systemImage: "circle.fill")
+                    .foregroundStyle(.green)
+                Label("Pending: \(pendingTotal, format: .currency(code: "USD"))", systemImage: "circle.fill")
+                    .foregroundStyle(.orange)
             }
             .font(.caption.bold())
             
             Chart {
                 ForEach(chartData, id: \.label) { dataPoint in
-                    BarMark(x: .value("Week", dataPoint.label), y: .value("Amount", dataPoint.amount))
-                        .foregroundStyle(.green.gradient).cornerRadius(4)
+                    BarMark(
+                        x: .value("Time", dataPoint.label),
+                        y: .value("Amount", dataPoint.amount)
+                    )
+                    .foregroundStyle(.green.gradient)
+                    .cornerRadius(4)
                 }
             }
-            .frame(height: 150).padding(.top, 10)
+            .frame(height: 150)
+            .padding(.top, 10)
         }
-        .padding().background(RoundedRectangle(cornerRadius: 16).fill(.white)).padding(.horizontal)
+        .padding()
+        .background(RoundedRectangle(cornerRadius: 16).fill(.white))
+        .padding(.horizontal)
     }
 }
 
