@@ -16,9 +16,9 @@ struct Settings: View {
                         Label("Account & Profile", systemImage: "person.circle")
                     }
                     
-                    NavigationLink(destination: Currency()){
-                        Label("Currency", systemImage: "dollarsign.circle")
-                    }
+//                    NavigationLink(destination: Currency()){
+//                        Label("Currency", systemImage: "dollarsign.circle")
+//                    }
                     
                     NavigationLink(destination: Notifications()){
                         Label("Notifications", systemImage: "bell.circle")
