@@ -19,6 +19,7 @@ struct TabsItem: View {
             NavigationStack {
                 Dashboard()
                     .navigationTitle(Tabs.dashboard.rawValue)
+                    .navigationBarTitleDisplayMode(.large)
                    
             }
             .tabItem {

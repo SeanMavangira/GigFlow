@@ -493,4 +493,20 @@ struct TransactionRow: View {
     }
 }
 
-
+struct StatBox: View {
+    let title: String
+    let value: String
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text(title).font(.subheadline).bold().foregroundStyle(.secondary)
+            Spacer()
+            Text(value).font(.largeTitle).bold().frame(maxWidth: .infinity)
+            Spacer()
+        }
+        .padding()
+        .frame(height: 120)
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.1), radius: 5)
+    }
+}

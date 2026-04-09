@@ -8,6 +8,7 @@
 import  SwiftUI
 struct Dashboard: View {
     @Environment(GigData.self) private var data
+    
     var todayGigs: [Binding<Gig>] {
         @Bindable var bindableData = data
         return $bindableData.gigs.filter { $gig in
@@ -25,31 +26,24 @@ struct Dashboard: View {
         }
     }
     
-
     var body: some View {
-        
         ZStack {
             Color(UIColor.systemGray6).ignoresSafeArea()
             
             ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 25) {
                     
-                    
+                    // Earnings Card
                     ZStack {
                         RoundedRectangle(cornerRadius: 16)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color(UIColor.secondarySystemGroupedBackground))
                             .frame(height: 130)
-                            .shadow(radius: 5)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                            )
+                            .shadow(color: .black.opacity(0.1), radius: 5)
                         
                         VStack(alignment: .leading) {
                             Text("Earnings:")
                                 .font(.title)
                                 .bold()
-                                .foregroundColor(.black)
                             
                             Spacer()
                             
@@ -66,159 +60,80 @@ struct Dashboard: View {
                     }
                     
                     // Today's Tasks Card
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 16)
-                            .foregroundStyle(.white)
-                            .frame(height: 300)
-                            .shadow(radius: 5)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                            )
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("Today's Tasks")
+                                .font(.headline).bold()
+                            Spacer()
+                        }
+                        .padding()
                         
-                        VStack(alignment: .leading, spacing: 0) {
-                            HStack {
-                                Text("Today's Tasks")
-                                    .font(.headline)
-                                    .bold()
-                                Spacer()
-                            }
-                            .padding()
-                            
-                            Divider()
-                            
-                            ScrollView {
-                                VStack(spacing: 0) {
-                                    ForEach(todayGigs) { $gig in
-                                        GigRowView(gig: $gig)
-                                            .padding(.horizontal)
-                                        Divider().padding(.horizontal)
-                                    }
+                        Divider()
+                        
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                ForEach(todayGigs) { $gig in
+                                    GigRowView(gig: $gig)
+                                        .padding(.horizontal)
+                                    Divider().padding(.horizontal)
                                 }
                             }
-                            .frame(height: 235)
                         }
-                        .background(Color.white)
-                        .cornerRadius(16)
-                        .clipped()
+                        .frame(height: 235)
                     }
+                    .background(Color(UIColor.secondarySystemGroupedBackground))
+                    .cornerRadius(16)
+                    .shadow(color: .black.opacity(0.1), radius: 5)
                     
                     // Upcoming Deadlines Card
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 16)
-                            .foregroundStyle(.white)
-                            .frame(height: 300)
-                            .shadow(radius: 5)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                            )
-                        VStack(alignment: .leading, spacing: 0) {
-                            HStack {
-                                Text("Upcoming Deadlines")
-                                    .bold()
-                                Spacer()
-                            }
-                            .padding()
-                            
-                            Divider()
-                            
-                            ScrollView {
-                                VStack(spacing: 0) {
-                                    ForEach(upcomingGigs) { $gig in
-                                        GigRowView(gig: $gig)
-                                            .padding(.horizontal)
-                                        Divider().padding(.horizontal)
-                                    }
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("Upcoming Deadlines").bold()
+                            Spacer()
+                        }
+                        .padding()
+                        
+                        Divider()
+                        
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                ForEach(upcomingGigs) { $gig in
+                                    GigRowView(gig: $gig)
+                                        .padding(.horizontal)
+                                    Divider().padding(.horizontal)
                                 }
                             }
-                            .frame(height: 235)
                         }
+                        .frame(height: 235)
                     }
+                    .background(Color(UIColor.secondarySystemGroupedBackground))
+                    .cornerRadius(16)
+                    .shadow(color: .black.opacity(0.1), radius: 5)
                     
-                    HStack {
-                        
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 16)
-                                .frame(width: 170, height: 150)
-                                .foregroundStyle(.white)
-                                .shadow(radius: 5)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                                )
-                                .overlay(alignment: .topLeading) {
-                                    Text("Active Gigs")
-                                        .bold()
-                                        .font(.title2)
-                                        .padding()
-                                }
-                                .overlay(alignment: .center) {
-                                    HStack {
-                                        Text("\(data.gigs.filter { $0.status == .active }.count)")
-                                            .offset(y: 20)
-                                            .bold()
-                                            .font(.largeTitle)
-//                                        Button {
-//                                            Gigs(selectedStatus: .active)
-//                                        } label: {
-//                                            Text("In Progress >")
-//                                                .offset(y: 20)
-//                                                .font(.headline)
-//                                                .foregroundStyle(.black)
-//                                        }
-                                    }
-                                    .padding()
-                                }
-                        }
-                        
-                        Spacer()
-                        
-                        
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 16)
-                                .frame(width: 170, height: 150)
-                                .foregroundStyle(.white)
-                                .shadow(radius: 5)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                                )
-                                .overlay(alignment: .topLeading) {
-                                    Text("Pending Payments")
-                                        .bold()
-                                        .font(.title2)
-                                        .padding()
-                                }
-                                .overlay(alignment: .center) {
-                                    HStack {
-                                        Text("\(data.gigs.filter { $0.status == .pending }.count)")
-                                            .offset(y: 20)
-                                            .font(.largeTitle)
-                                            .bold()
-                                        
-//                                       Button {
-//                                            Gigs(selectedStatus: .pending)
-//                                        } label: {
-//                                            Text("Pending >")
-//                                                .font(.headline)
-//                                                .foregroundStyle(.blue)
-//                                                .background(Color.black.opacity(0.001))
-//                                        }
-//                                        .offset(y: 20)
-                                    }
-                                }
-                        }
+                    // Stats Row
+                    HStack(spacing: 15) {
+                        StatBox(title: "Active Gigs", value: "\(data.gigs.filter { $0.status == .active }.count)")
+                        StatBox(title: "Pending", value: "\(data.gigs.filter { $0.status == .pending }.count)")
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 20)
+                .padding(.top, 10)
                 .padding(.bottom, 20)
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink(destination: Settings()) {
+                    Image(systemName: "gearshape.fill")
+                        .foregroundStyle(.primary)
+                }
+            }
+        }
     }
 }
+
+
+
 
 
 #Preview {
