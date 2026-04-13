@@ -192,7 +192,6 @@ struct TimerPage: View {
                         Text("Please make sure the gig status is set to 'Active' in the Gigs page before starting the timer.")
                     }
                 }
-                .navigationBarTitleDisplayMode(.inline)
             }
             .background(Color(UIColor.systemGray6).ignoresSafeArea())
             .onReceive(systemTimer) { _ in
@@ -200,7 +199,6 @@ struct TimerPage: View {
                     data.timeDone += 1
                 }
             }
-            //        .navigationBarTitleDisplayMode(.inline)
         }
     }
     
