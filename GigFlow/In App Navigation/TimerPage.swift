@@ -74,6 +74,7 @@ struct TimerPage: View {
                             .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                     )
                 }
+                .shadow(radius: 5)
                 
                 
                 .padding(.top, 8)
@@ -104,6 +105,7 @@ struct TimerPage: View {
                                 .font(.system(size: 60, weight: .bold, design: .monospaced))
                         }
                     }
+                    .shadow(radius: 5)
                     
                     
                     Button {
@@ -141,6 +143,7 @@ struct TimerPage: View {
                             .foregroundColor(.white)
                         }
                     }
+                    .shadow(radius: 5)
                    
                     .opacity(data.selectedGig == nil ? 0.5 : 1.0)
                         
@@ -182,7 +185,7 @@ struct TimerPage: View {
                         }
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 16).fill(.white))
-                        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+                        .shadow(radius: 5)
                         
                     }
                     .padding(20)
