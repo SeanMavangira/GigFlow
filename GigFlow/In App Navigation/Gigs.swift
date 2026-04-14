@@ -77,7 +77,6 @@ struct Gigs: View {
     
     var body: some View {
         ZStack {
-            Color(UIColor.systemGray6).ignoresSafeArea()
             
             VStack(spacing: 0) {
                 // Segmented Picker for Filtering
@@ -89,9 +88,10 @@ struct Gigs: View {
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal)
+                    .shadow(radius: 5)
                 }
                 .padding(.vertical, 10)
-                .background(Color(UIColor.systemGray6))
+               
                 
                 ScrollView {
                     VStack(spacing: 25) {
