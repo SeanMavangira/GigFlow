@@ -14,7 +14,7 @@ struct Earnings: View {
     
     var body: some View {
         ZStack {
-            Color(UIColor.systemGray6).ignoresSafeArea()
+
             
             VStack(spacing: 0) {
                
@@ -28,7 +28,7 @@ struct Earnings: View {
                     .padding(.horizontal)
                 }
                 .padding(.vertical, 10)
-                .background(Color(UIColor.systemGray6))
+                .shadow(radius: 5)
                 
                 ScrollView {
                     VStack(spacing: 20) {

@@ -403,6 +403,7 @@ struct TotalEarnedCard: View {
         .padding()
         .background(RoundedRectangle(cornerRadius: 16).fill(.white))
         .padding(.horizontal)
+        .shadow(radius: 5)
     }
 }
 
@@ -441,6 +442,7 @@ struct PaymentStatusCard: View {
             }
         }
         .padding().background(RoundedRectangle(cornerRadius: 16).fill(.white)).padding(.horizontal)
+        .shadow(radius: 5)
     }
 }
 
@@ -471,7 +473,7 @@ struct RecentTransactionsCard: View {
                 }
             }
         }
-        .padding().background(RoundedRectangle(cornerRadius: 16).fill(.white)).padding(.horizontal).shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .padding().background(RoundedRectangle(cornerRadius: 16).fill(.white)).padding(.horizontal).shadow( radius: 5)
     }
 }
 
