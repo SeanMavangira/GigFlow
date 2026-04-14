@@ -28,7 +28,7 @@ struct Dashboard: View {
     
     var body: some View {
         ZStack {
-            Color(UIColor.systemGray6).ignoresSafeArea()
+            
             
             ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 25) {
@@ -38,7 +38,7 @@ struct Dashboard: View {
                         RoundedRectangle(cornerRadius: 16)
                             .foregroundStyle(Color(UIColor.secondarySystemGroupedBackground))
                             .frame(height: 130)
-                            .shadow(color: .black.opacity(0.1), radius: 5)
+                            .shadow( radius: 5)
                         
                         VStack(alignment: .leading) {
                             Text("Earnings:")
@@ -83,7 +83,7 @@ struct Dashboard: View {
                     }
                     .background(Color(UIColor.secondarySystemGroupedBackground))
                     .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.1), radius: 5)
+                    .shadow(radius: 5)
                     
                     // Upcoming Deadlines Card
                     VStack(alignment: .leading, spacing: 0) {
@@ -108,13 +108,14 @@ struct Dashboard: View {
                     }
                     .background(Color(UIColor.secondarySystemGroupedBackground))
                     .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.1), radius: 5)
+                    .shadow( radius: 5)
                     
                     // Stats Row
                     HStack(spacing: 15) {
                         StatBox(title: "Active Gigs", value: "\(data.gigs.filter { $0.status == .active }.count)")
                         StatBox(title: "Pending", value: "\(data.gigs.filter { $0.status == .pending }.count)")
                     }
+                    .shadow( radius: 5)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
