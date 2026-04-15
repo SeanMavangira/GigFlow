@@ -9,6 +9,7 @@ import SwiftUI
 
 struct EditEmail: View {
     @Binding var email: String
+    @AppStorage("darkMode") var darkMode = false
     var body: some View {
         Form{
             Section{
@@ -16,6 +17,7 @@ struct EditEmail: View {
             }
         }
         .navigationTitle("Edit Email")
+        .preferredColorScheme(darkMode ? .dark : .light)
     }
 }
 

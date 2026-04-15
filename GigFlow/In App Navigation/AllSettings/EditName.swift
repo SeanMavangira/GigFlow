@@ -9,6 +9,7 @@ import SwiftUI
 
 struct EditName: View {
     @Binding var name: String
+    @AppStorage("darkMode") var darkMode = false
     var body: some View {
         Form{
             Section{
@@ -16,6 +17,7 @@ struct EditName: View {
             }
         }
         .navigationTitle("Edit Name")
+        .preferredColorScheme(darkMode ? .dark : .light)
     }
 }
 

@@ -18,6 +18,7 @@ struct Gigs: View {
     @State private var selectedGigStatus: GigPicker = .draft
     @State private var amountString = ""
     @State private var isHourly = false
+    @State private var deadlineDate = Date()
     @Environment(GigData.self) private var data
     @State private var editingGig: Gig?
     
@@ -60,7 +61,7 @@ struct Gigs: View {
             let newGig = Gig(
                 title: title,
                 clientName: clientName,
-                deadline: dueDate,
+                deadline: deadlineDate,
                 status: selectedGigStatus,
                 payType: finalPayType,
                 isPaid: markedAsPaid
@@ -101,7 +102,7 @@ struct Gigs: View {
                                 self.editingGig = gig
                                 self.title = gig.title
                                 self.clientName = gig.clientName
-                                self.dueDate = gig.deadline
+                                self.deadlineDate = gig.deadline
                                 self.selectedGigStatus = gig.status
                                 
                                 // Logic to get the raw number back out of the PayType enum
@@ -158,6 +159,14 @@ struct Gigs: View {
                             }
                         }
                         .pickerStyle(.navigationLink)
+                    }
+                    Section(header: Text("Deadline")){
+                        DatePicker(
+                                "Select Date",
+                                selection: $deadlineDate,
+                                in: Date()...,
+                                displayedComponents: [.date, .hourAndMinute]
+                            )
                     }
                     
                     Section(header: Text("Payment")) {

@@ -8,8 +8,13 @@
 import SwiftUI
 
 struct Appearance: View {
+    @AppStorage("darkMode") var darkMode = false
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        Form{
+            Toggle("Dark Mode", isOn: $darkMode)
+        }
+        .navigationTitle("Appearance")
+        .preferredColorScheme(darkMode ? .dark : .light)
     }
 }
 

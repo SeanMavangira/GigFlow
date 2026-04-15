@@ -12,34 +12,36 @@ struct AccountAndProfile: View {
     @AppStorage("email") var email: String = ""
     @AppStorage("currency") var currency: String = ""
     @AppStorage("name") var name = ""
+    @AppStorage("darkMode") var darkMode = false
+    
+    // Permanent storage for the photo as Data
+    @AppStorage("profileImageData") private var profileImageData: Data?
     
     @State private var selectedItem: PhotosPickerItem?
-    @State private var profileImage: Image?
-    
-    
     @State private var showLogoutConfirmation = false
     
+    // Computed property to turn stored Data back into a viewable Image
+    var profileImage: Image {
+        if let data = profileImageData, let uiImage = UIImage(data: data) {
+            return Image(uiImage: uiImage)
+        } else {
+            return Image(systemName: "person.circle.fill")
+        }
+    }
+    
     var body: some View {
-        
         Form {
-            
+            // Profile Picture Section
             Section {
                 VStack {
                     PhotosPicker(selection: $selectedItem, matching: .images) {
                         ZStack(alignment: .bottomTrailing) {
-                            Group {
-                                if let profileImage {
-                                    profileImage
-                                        .resizable()
-                                        .scaledToFill()
-                                } else {
-                                    Image(systemName: "person.circle.fill")
-                                        .resizable()
-                                        .foregroundStyle(.gray.opacity(0.3))
-                                }
-                            }
-                            .frame(width: 100, height: 100)
-                            .clipShape(Circle())
+                            profileImage
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 100, height: 100)
+                                .clipShape(Circle())
+                                .foregroundStyle(.gray.opacity(0.3)) // Only applies to placeholder
                             
                             Image(systemName: "plus.circle.fill")
                                 .symbolRenderingMode(.multicolor)
@@ -53,9 +55,9 @@ struct AccountAndProfile: View {
                 .listRowBackground(Color.clear)
             }
             
-            
+            // Info Section
             Section {
-                NavigationLink(destination:EditName(name: $name)) {
+                NavigationLink(destination: EditName(name: $name)) {
                     HStack {
                         Text("Name:")
                         Text(name).foregroundStyle(.secondary)
@@ -77,7 +79,7 @@ struct AccountAndProfile: View {
                 }
             }
             
-            
+            // Actions Section
             Section {
                 Button(role: .destructive) {
                     showLogoutConfirmation = true
@@ -90,30 +92,27 @@ struct AccountAndProfile: View {
         }
         .navigationTitle("Account & Profile")
         .navigationBarTitleDisplayMode(.inline)
+        .preferredColorScheme(darkMode ? .dark : .light)
         
-  
+        // Logout Alert
         .alert("Logout", isPresented: $showLogoutConfirmation) {
-                        Button("Yes", role: .destructive) {
-                           
-                           
-                        }
-                        Button("No", role: .cancel) {
-                           
-                        }
-                    } message: {
-                        Text("Do you want to log out?")
-                    }
+            Button("Yes", role: .destructive) {
+                // Logout logic here
+            }
+            Button("No", role: .cancel) { }
+        } message: {
+            Text("Do you want to log out?")
+        }
         
-       
-                            .onChange(of: selectedItem) { newItem in
-                                Task {
-                                    if let data = try? await newItem?.loadTransferable(type: Data.self),
-                                       let uiImage = UIImage(data: data) {
-                                        profileImage = Image(uiImage: uiImage)
-                                    }
-                                }
-                            }
-    
+        // Photo Picker Logic
+        .onChange(of: selectedItem) { _, newItem in
+            Task {
+                if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                    // This line saves the photo permanently to AppStorage
+                    profileImageData = data
+                }
+            }
+        }
     }
 }
 
