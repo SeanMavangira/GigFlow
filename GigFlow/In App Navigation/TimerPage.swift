@@ -81,7 +81,7 @@ struct TimerPage: View {
             }
             .padding(.horizontal)
             .padding(.top, 15)
-            .background(Color(UIColor.systemGray6))
+            
             
             
             ScrollView {
@@ -196,7 +196,7 @@ struct TimerPage: View {
                     }
                 }
             }
-            .background(Color(UIColor.systemGray6).ignoresSafeArea())
+           
             .onReceive(systemTimer) { _ in
                 if isRunning {
                     data.timeDone += 1
