@@ -8,8 +8,12 @@
 import SwiftUI
 
 struct Notifications: View {
+    @AppStorage("darkMode") var darkMode = false
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        Form{
+            
+        }
+            .preferredColorScheme(darkMode ? .dark : .light)
     }
 }
 

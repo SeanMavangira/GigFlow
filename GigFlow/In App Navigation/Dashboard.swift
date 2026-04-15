@@ -25,7 +25,7 @@ struct Dashboard: View {
             $gig.deadline.wrappedValue >= tomorrow
         }
     }
-    
+    @AppStorage("darkMode") var darkMode = false
     var body: some View {
         ZStack {
             
@@ -122,6 +122,7 @@ struct Dashboard: View {
                 .padding(.bottom, 20)
             }
         }
+        .preferredColorScheme(darkMode ? .dark : .light)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink(destination: Settings()) {

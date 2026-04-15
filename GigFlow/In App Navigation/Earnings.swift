@@ -11,7 +11,7 @@ import Charts
 struct Earnings: View {
     @State private var selectedPeriod: EarningsPeriod = .monthly
     @Environment(GigData.self) private var data
-    
+    @AppStorage("darkMode") var darkMode = false
     var body: some View {
         ZStack {
 
@@ -40,6 +40,7 @@ struct Earnings: View {
                 }
             }
         }
+        .preferredColorScheme(darkMode ? .dark : .light)
     }
 }
 

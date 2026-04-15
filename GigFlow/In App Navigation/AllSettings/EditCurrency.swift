@@ -11,7 +11,7 @@ struct EditCurrency: View {
     @Binding var selectedCurrency: String
     @Environment(\.dismiss) var dismiss
     @State private var searchText = ""
-    
+    @AppStorage("darkMode") var darkMode = false
     
     let currencies = Locale.commonISOCurrencyCodes.sorted()
 
@@ -37,10 +37,10 @@ struct EditCurrency: View {
                     VStack(alignment: .leading) {
                         Text(code)
                             .font(.headline)
-                            .foregroundStyle(.black)
+                            .foregroundStyle(Color.adaptiveText(isDark: darkMode))
                         Text(currencyFullName(for: code))
                             .font(.subheadline)
-                            .foregroundStyle(.black)
+                            .foregroundStyle(Color.adaptiveText(isDark: darkMode))
                     }
                     
                     Spacer()
@@ -55,6 +55,7 @@ struct EditCurrency: View {
         }
         .navigationTitle("Select Currency")
         .searchable(text: $searchText, prompt: "Search for a currency")
+        .preferredColorScheme(darkMode ? .dark : .light)
     }
 
    

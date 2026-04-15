@@ -10,8 +10,8 @@
 import Foundation
 import SwiftUI
 import Charts
-struct Gig: Identifiable {
-    let id = UUID()
+struct Gig: Identifiable, Codable {
+    var id = UUID()
     var title: String
     var clientName: String
     var deadline: Date
@@ -19,6 +19,7 @@ struct Gig: Identifiable {
     var payType: PayType
     var timeSpentInSeconds: TimeInterval = 0
     var isPaid: Bool = false
+    
     var amount: Double {
         switch payType {
         case .hourly(let rate):
@@ -27,18 +28,16 @@ struct Gig: Identifiable {
             return fixedAmount
         }
     }
-    
-
 }
 
-enum GigStatus: String, CaseIterable {
+enum GigStatus: String, CaseIterable, Codable {
     case all = "All"
     case active = "Active"
     case pending = "Pending"
     case completed = "Completed"
 }
 
-enum GigPicker: String, CaseIterable, Identifiable {
+enum GigPicker: String, CaseIterable, Identifiable, Codable {
     case draft = "Draft"
     case active = "Active"
     case pending = "Pending"
@@ -147,13 +146,14 @@ struct GigCard: View {
     var onEdit: () -> Void
     
     @Environment(GigData.self) private var data
-    
+    @AppStorage("darkMode") var darkMode = false
+
     var body: some View {
         
         ZStack {
             
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
+                .fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white)
                 .frame(width: 380, height: 150)
                 .shadow(radius: 5)
             
@@ -369,12 +369,12 @@ struct TotalEarnedCard: View {
             return (label: key, amount: value.reduce(0.0) { $0 + $1.amount }, date: representativeDate)
         }.sorted { $0.date < $1.date } // This ensures Jan comes before Feb
     }
-
+    @AppStorage("darkMode") var darkMode = false
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Total Earned")
                 .font(.headline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(darkMode ? .white : .black)
             
             Text(paidTotal, format: .currency(code: "USD"))
                 .font(.system(size: 34, weight: .bold))
@@ -401,7 +401,9 @@ struct TotalEarnedCard: View {
             .padding(.top, 10)
         }
         .padding()
-        .background(RoundedRectangle(cornerRadius: 16).fill(.white))
+        .background(RoundedRectangle(cornerRadius: 16).fill(.white)
+            .fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white)
+        )
         .padding(.horizontal)
         .shadow(radius: 5)
     }
@@ -410,7 +412,7 @@ struct TotalEarnedCard: View {
 struct PaymentStatusCard: View {
     let selectedPeriod: EarningsPeriod
     @Environment(GigData.self) private var data
-    
+    @AppStorage("darkMode") var darkMode = false
     var body: some View {
         let paid = data.gigs.filter { (selectedPeriod == .monthly ? $0.deadline.isInCurrentMonth : $0.deadline.isInCurrentYear) && $0.status == .completed }.reduce(0.0) { $0 + $1.amount }
         let pending = data.gigs.filter { (selectedPeriod == .monthly ? $0.deadline.isInCurrentMonth : $0.deadline.isInCurrentYear) && ($0.status == .pending || $0.status == .active) }.reduce(0.0) { $0 + $1.amount }
@@ -441,13 +443,16 @@ struct PaymentStatusCard: View {
                 }
             }
         }
-        .padding().background(RoundedRectangle(cornerRadius: 16).fill(.white)).padding(.horizontal)
+        .padding().background(RoundedRectangle(cornerRadius: 16).fill(.white)
+            .fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white)).padding(.horizontal)
+        
         .shadow(radius: 5)
     }
 }
 
 struct RecentTransactionsCard: View {
     let selectedPeriod: EarningsPeriod
+    @AppStorage("darkMode") var darkMode = false
     @Environment(GigData.self) private var data
     
     var recentTransactions: [Gig] {
@@ -473,7 +478,7 @@ struct RecentTransactionsCard: View {
                 }
             }
         }
-        .padding().background(RoundedRectangle(cornerRadius: 16).fill(.white)).padding(.horizontal).shadow( radius: 5)
+        .padding().background(RoundedRectangle(cornerRadius: 16).fill(.white).fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white)).padding(.horizontal).shadow( radius: 5)
     }
 }
 
@@ -512,3 +517,4 @@ struct StatBox: View {
         .shadow(color: .black.opacity(0.1), radius: 5)
     }
 }
+
