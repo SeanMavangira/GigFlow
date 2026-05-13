@@ -23,6 +23,7 @@ struct TimerSettingPage: View {
         Form{
             Toggle("Timer Sound", isOn: $isTimerSoundEnabled)
         }
+        .navigationTitle("Timer Settings")
     }
 }
 
