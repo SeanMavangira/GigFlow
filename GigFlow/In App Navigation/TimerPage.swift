@@ -10,6 +10,8 @@ internal import Combine
 import AudioToolbox
 import AVFoundation
 
+
+
 struct TimerPage: View {
     @Environment(GigData.self) private var data
     @AppStorage("enableLiveActivity") var enableLiveActivity = true
@@ -18,10 +20,12 @@ struct TimerPage: View {
     
     @State private var isRunning = false
     @State private var showStatusAlert = false
+    @State private var alertTitle = ""
+    @State private var alertMessage = ""
     
     let systemTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
- 
+    // Computed Properties
     
     var liveSelectedGig: Gig? {
         data.gigs.first(where: { $0.id == data.selectedGig?.id })
@@ -34,23 +38,19 @@ struct TimerPage: View {
         }
     }
     
-    /// CALCULATED AMOUNT: Shows exactly what has been earned based on time spent
     var currentEarnings: Double {
         guard let gig = liveSelectedGig else { return 0.0 }
-        
-        // We calculate based on the total time (saved time + current session time)
         let totalSeconds = gig.timeSpentInSeconds + Double(data.timeDone)
         
         switch gig.payType {
         case .hourly(let rate):
-            // (Seconds / 3600) gives the fraction of the hour, multiplied by rate
             return (totalSeconds / 3600.0) * rate
         case .fixed(let amount):
             return amount
         }
     }
     
-    
+    // MARK: - Helper Functions
     
     func playTimerFeedback(isStarting: Bool, isEnabled: Bool) {
         guard isEnabled else { return }
@@ -58,6 +58,13 @@ struct TimerPage: View {
         AudioServicesPlaySystemSound(soundID)
         let generator = UIImpactFeedbackGenerator(style: .heavy)
         generator.impactOccurred()
+    }
+    
+    func timeString(from totalSeconds: Int) -> String {
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
 
     var body: some View {
@@ -98,22 +105,18 @@ struct TimerPage: View {
             
             ScrollView {
                 VStack(spacing: 30) {
-                    // Timer Display
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white)
-                            .frame(height: 120)
-                            .shadow(radius: 5)
+                    // --- TIME TRACKING CARD (Width matched to Earnings Card) ---
+                    VStack(spacing: 10) {
+                        Text("TIME TRACKING")
+                            .font(.caption).fontWeight(.bold).foregroundColor(.gray).kerning(1.2)
                         
-                        VStack(spacing: 10) {
-                            Text("TIME TRACKING")
-                                .font(.caption).fontWeight(.bold).foregroundColor(.gray).kerning(1.2)
-                            
-                            Text(timeString(from: data.timeDone))
-                                .font(.system(size: 60, weight: .bold, design: .monospaced))
-                        }
+                        Text(timeString(from: data.timeDone))
+                            .font(.system(size: 60, weight: .bold, design: .monospaced))
                     }
-                    .padding(.horizontal)
+                    .frame(maxWidth: .infinity) 
+                    .frame(height: 120)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white))
+                    .shadow(radius: 5)
                     
                     // Action Button
                     Button {
@@ -138,15 +141,21 @@ struct TimerPage: View {
                                         NotificationManager.shared.startLiveActivity(for: gig, rate: rate)
                                     }
                                 } else {
+                                    alertTitle = "Gig Not Active"
+                                    alertMessage = "Please make sure the gig status is set to 'Active' in the Gigs page before starting the timer."
                                     showStatusAlert = true
                                 }
                             }
+                        } else {
+                            alertTitle = "No Gig Selected"
+                            alertMessage = "Please select a gig from the menu at the top before starting the timer."
+                            showStatusAlert = true
                         }
                     } label: {
                         ZStack {
                             Circle()
                                 .frame(width: 140)
-                                .foregroundStyle(isRunning ? .red : (liveSelectedGig?.status == .active ? .blue : .gray))
+                                .foregroundStyle(isRunning ? .red : (liveSelectedGig != nil ? .blue : .gray))
                                 .shadow(radius: 4)
                             
                             VStack(spacing: 4) {
@@ -158,8 +167,6 @@ struct TimerPage: View {
                             .foregroundColor(.white)
                         }
                     }
-                    .disabled(liveSelectedGig == nil)
-                    .opacity(liveSelectedGig == nil ? 0.5 : 1.0)
                     
                     Button {
                         isRunning = false
@@ -171,7 +178,7 @@ struct TimerPage: View {
                             .background(Capsule().stroke(Color.gray.opacity(0.3), lineWidth: 1))
                     }
                     
-                    // FIXED EARNINGS CARD: Shows actual calculated amount
+                    // --- TOTAL EARNED CARD ---
                     VStack(alignment: .leading, spacing: 15) {
                         Text("Total Earned")
                             .font(.title2).bold().foregroundColor(.gray)
@@ -179,12 +186,10 @@ struct TimerPage: View {
                         HStack {
                             Spacer()
                             VStack(spacing: 8) {
-                                // This shows the actual dollar amount calculated from the time
                                 Text(currentEarnings, format: .currency(code: "USD"))
                                     .font(.system(size: 45, weight: .bold))
                                     .foregroundStyle(darkMode ? .white : .black)
                                 
-                                // This shows the static rate for reference
                                 if let gig = liveSelectedGig, case .hourly(let rate) = gig.payType {
                                     Text("Rate: \(rate, format: .currency(code: "USD")) / hour")
                                         .font(.subheadline)
@@ -195,18 +200,20 @@ struct TimerPage: View {
                             Spacer()
                         }
                     }
+                    .frame(maxWidth: .infinity) // Matches the width of the timer card
                     .padding()
                     .background(RoundedRectangle(cornerRadius: 16).fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white))
                     .shadow(radius: 5)
                 }
-                .padding(20)
+                .padding(.horizontal, 20) // Parent padding controls both cards equally
+                .padding(.vertical, 20)
             }
         }
         .preferredColorScheme(darkMode ? .dark : .light)
-        .alert("Gig Not Active", isPresented: $showStatusAlert) {
+        .alert(alertTitle, isPresented: $showStatusAlert) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Please make sure the gig status is set to 'Active' in the Gigs page before starting the timer.")
+            Text(alertMessage)
         }
         .onReceive(systemTimer) { _ in
             if isRunning {
