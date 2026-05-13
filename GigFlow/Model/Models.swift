@@ -143,23 +143,20 @@ class GigData {
 
 struct GigCard: View {
     let gig: Gig
+    let liveSeconds: Double 
     var onEdit: () -> Void
     
     @Environment(GigData.self) private var data
     @AppStorage("darkMode") var darkMode = false
 
     var body: some View {
-        
         ZStack {
-            
             RoundedRectangle(cornerRadius: 12)
                 .fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white)
-                .frame(width: 380, height: 150)
+                .frame(height: 150) // Removed fixed width for better responsiveness
                 .shadow(radius: 5)
             
-            
             VStack(alignment: .leading, spacing: 10) {
-                
                 HStack {
                     Circle()
                         .fill(statusColor)
@@ -170,16 +167,14 @@ struct GigCard: View {
                         .fontWeight(.bold)
                     
                     Spacer()
+                    
                     Menu {
-                        Button {
-                            onEdit()
-                        } label: {
+                        Button { onEdit() } label: {
                             Label("Edit Gig", systemImage: "pencil")
                         }
                         
                         Button(role: .destructive) {
                             withAnimation(.spring()) {
-                                
                                 data.deleteGig(gig)
                             }
                         } label: {
@@ -192,14 +187,12 @@ struct GigCard: View {
                             .padding(5)
                             .contentShape(Rectangle())
                     }
-                    
                 }
-                
                 
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Deadline: ")
-                            .font(.subheadline)
+                            .font(.caption)
                             .foregroundColor(.gray)
                         Text(gig.deadline, format: .dateTime.month().day())
                             .font(.subheadline)
@@ -210,12 +203,10 @@ struct GigCard: View {
                     Spacer()
                     
                     Button {
-                       
                         withAnimation(.spring()) {
                             toggleStatus()
                         }
                     } label: {
-                      
                         Text(gig.status.rawValue)
                             .font(.caption)
                             .fontWeight(.bold)
@@ -230,7 +221,6 @@ struct GigCard: View {
                 
                 Divider()
                 
-                
                 HStack {
                     Text("Client: \(gig.clientName)")
                         .font(.subheadline)
@@ -238,25 +228,37 @@ struct GigCard: View {
                     
                     Spacer()
                     
-                    
-                    HStack(spacing: 2) {
-                        
-                        Text(gig.amount, format: .currency(code: "USD"))
-                            .font(.headline)
-                            .fontWeight(.bold)
-                        
-                        Text(gig.payType.isFixed ? " (Fixed)" : "/hr")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
+                    // --- LIVE CALCULATION LOGIC ---
+                    VStack(alignment: .trailing, spacing: 0) {
+                        switch gig.payType {
+                        case .hourly(let rate):
+                            // Calculate dollars based on the liveSeconds passed from the parent
+                            let earned = (liveSeconds / 3600.0) * rate
+                            Text(earned, format: .currency(code: "USD"))
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .contentTransition(.numericText()) // Smoothly animates numbers
+                            
+                            Text("$\(Int(rate))/hr")
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                                
+                        case .fixed(let amount):
+                            Text(amount, format: .currency(code: "USD"))
+                                .font(.headline)
+                                .fontWeight(.bold)
+                            Text("Fixed")
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                        }
                     }
                 }
             }
             .padding(20)
-            .frame(width: 380, height: 150, alignment: .topLeading)
         }
+        .padding(.horizontal)
     }
     
-    // Helper to get colors based on your Enum
     var statusColor: Color {
         switch gig.status {
         case .active: return .blue
@@ -268,14 +270,12 @@ struct GigCard: View {
     
     func toggleStatus() {
         var updatedGig = gig
-        
         switch gig.status {
         case .draft:     updatedGig.status = .active
         case .active:    updatedGig.status = .pending
         case .pending:   updatedGig.status = .completed
         case .completed: updatedGig.status = .draft
         }
-        
         data.update(updatedGig)
     }
 }
@@ -393,7 +393,9 @@ struct TotalEarnedCard: View {
                         x: .value("Time", dataPoint.label),
                         y: .value("Amount", dataPoint.amount)
                     )
-                    .foregroundStyle(.green.gradient)
+                    .foregroundStyle(
+                                darkMode ? Color(red: 0.1, green: 0.4, blue: 0.1).gradient : Color.green.gradient
+                            )
                     .cornerRadius(4)
                 }
             }
@@ -414,13 +416,26 @@ struct PaymentStatusCard: View {
     @Environment(GigData.self) private var data
     @AppStorage("darkMode") var darkMode = false
     var body: some View {
-        let paid = data.gigs.filter { (selectedPeriod == .monthly ? $0.deadline.isInCurrentMonth : $0.deadline.isInCurrentYear) && $0.status == .completed }.reduce(0.0) { $0 + $1.amount }
-        let pending = data.gigs.filter { (selectedPeriod == .monthly ? $0.deadline.isInCurrentMonth : $0.deadline.isInCurrentYear) && ($0.status == .pending || $0.status == .active) }.reduce(0.0) { $0 + $1.amount }
-        
-        let pieData = [
-            PieSegment(category: "Paid", amount: paid, color: .green),
-            PieSegment(category: "Pending", amount: pending, color: .orange)
-        ]
+        let paid = data.gigs.filter {
+                    (selectedPeriod == .monthly ? $0.deadline.isInCurrentMonth : $0.deadline.isInCurrentYear) && $0.status == .completed
+                }.reduce(0.0) { $0 + $1.amount }
+                
+                let pending = data.gigs.filter {
+                    (selectedPeriod == .monthly ? $0.deadline.isInCurrentMonth : $0.deadline.isInCurrentYear) && ($0.status == .pending || $0.status == .active)
+                }.reduce(0.0) { $0 + $1.amount }
+                
+                let pieData = [
+                    PieSegment(
+                        category: "Paid",
+                        amount: paid,
+                        color: darkMode ? Color(red: 0.1, green: 0.4, blue: 0.1) : .green
+                    ),
+                    PieSegment(
+                        category: "Pending",
+                        amount: pending,
+                        color: darkMode ? Color(red: 0.6, green: 0.3, blue: 0.0) : .orange
+                    )
+                ]
 
         return VStack(alignment: .leading, spacing: 20) {
             Text("Payment Status").font(.headline)
@@ -478,7 +493,11 @@ struct RecentTransactionsCard: View {
                 }
             }
         }
-        .padding().background(RoundedRectangle(cornerRadius: 16).fill(.white).fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white)).padding(.horizontal).shadow( radius: 5)
+        .padding()
+        .background(RoundedRectangle(cornerRadius: 16)
+            .fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white))
+        .padding(.horizontal)
+            .shadow( radius: 5)
     }
 }
 

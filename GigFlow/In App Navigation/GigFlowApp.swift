@@ -10,6 +10,11 @@ import SwiftUI
 @main
 struct GigFlowApp: App {
     @State private var data = GigData()
+    
+    init() {
+            NotificationManager.shared.requestAuthorization()
+        }
+    
     var body: some Scene {
         WindowGroup {
            TabsItem()

@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct Gigs: View {
-    
+    @AppStorage("deadlineAlerts") var deadlineAlerts = true
     @State var selectedStatus: GigStatus = .all
     @State private var isPaid = false
     @State private var showSheet = false
@@ -30,57 +30,10 @@ struct Gigs: View {
         }
     }
     
-    func resetForm() {
-        title = ""
-        clientName = ""
-        dueDate = Date()
-        selectedGigStatus = .draft
-        amountString = ""
-        isHourly = false
-        editingGig = nil
-    }
-    
-    func saveGig() {
-        let finalAmount = Double(amountString) ?? 0.0
-        let finalPayType: PayType = isHourly ? .hourly(rate: finalAmount) : .fixed(amount: finalAmount)
-        
-        // logic: If status is completed, it counts as paid for the charts
-        let markedAsPaid = (selectedGigStatus == .completed)
-        
-        if let gig = editingGig {
-            var updated = gig
-            updated.title = title
-            updated.clientName = clientName
-            updated.deadline = dueDate
-            updated.status = selectedGigStatus
-            updated.payType = finalPayType
-            updated.isPaid = markedAsPaid
-            
-            data.update(updated)
-        } else {
-            let newGig = Gig(
-                title: title,
-                clientName: clientName,
-                deadline: deadlineDate,
-                status: selectedGigStatus,
-                payType: finalPayType,
-                isPaid: markedAsPaid
-            )
-            data.gigs.append(newGig)
-        }
-    }
-    
-    var isFormInvalid: Bool {
-        title.trimmingCharacters(in: .whitespaces).isEmpty ||
-        clientName.trimmingCharacters(in: .whitespaces).isEmpty ||
-        amountString.isEmpty
-    }
-    
     var body: some View {
         ZStack {
-            
             VStack(spacing: 0) {
-                // Segmented Picker for Filtering
+                // Filter Picker
                 VStack {
                     Picker("Gig Status", selection: $selectedStatus) {
                         ForEach(GigStatus.allCases, id: \.self) { status in
@@ -89,23 +42,27 @@ struct Gigs: View {
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal)
-                    .shadow(radius: 5)
                 }
                 .padding(.vertical, 10)
-               
                 
                 ScrollView {
-                    VStack(spacing: 25) {
+                    VStack(spacing: 20) {
                         ForEach(filteredGigs) { gig in
-                            GigCard(gig: gig) {
-                                // --- FIX: Extracting values for editing ---
+                            // --- CALCULATION LOGIC ---
+                            // Check if this specific gig is the one selected in the Timer page
+                            let isSelectedInTimer = (data.selectedGig?.id == gig.id)
+                            
+                            // If it's selected, we add the current running session time (data.timeDone)
+                            let currentLiveSeconds = gig.timeSpentInSeconds + (isSelectedInTimer ? Double(data.timeDone) : 0.0)
+                            
+                            GigCard(gig: gig, liveSeconds: currentLiveSeconds) {
+                                // EDIT BUTTON ACTION
                                 self.editingGig = gig
                                 self.title = gig.title
                                 self.clientName = gig.clientName
                                 self.deadlineDate = gig.deadline
                                 self.selectedGigStatus = gig.status
                                 
-                                // Logic to get the raw number back out of the PayType enum
                                 switch gig.payType {
                                 case .fixed(let amt):
                                     self.amountString = String(format: "%.2f", amt)
@@ -114,12 +71,10 @@ struct Gigs: View {
                                     self.amountString = String(format: "%.2f", rate)
                                     self.isHourly = true
                                 }
-                                
                                 self.showSheet = true
                             }
                         }
-                        
-                        Color.clear.frame(height: 80)
+                        Color.clear.frame(height: 100)
                     }
                     .padding(.top)
                 }
@@ -141,17 +96,13 @@ struct Gigs: View {
             .padding(.bottom, 20)
         }
         .sheet(isPresented: $showSheet) {
+            // Your existing NavigationStack / Form code stays exactly as it was
             NavigationStack {
                 Form {
-                    Section(
-                        header: Text("Details"),
-                        footer: Text(isFormInvalid ? "Please fill in all fields to save." : "")
-                            .foregroundColor(.red)
-                    ) {
+                    Section(header: Text("Details")) {
                         TextField("Title", text: $title)
                         TextField("Client Name", text: $clientName)
                     }
-                    
                     Section(header: Text("Status")) {
                         Picker("Gig Status", selection: $selectedGigStatus) {
                             ForEach(GigPicker.allCases) { status in
@@ -160,38 +111,26 @@ struct Gigs: View {
                         }
                         .pickerStyle(.navigationLink)
                     }
-                    Section(header: Text("Deadline")){
-                        DatePicker(
-                                "Select Date",
-                                selection: $deadlineDate,
-                                in: Date()...,
-                                displayedComponents: [.date, .hourAndMinute]
-                            )
+                    Section(header: Text("Deadline")) {
+                        DatePicker("Select Date", selection: $deadlineDate, in: Date()..., displayedComponents: [.date, .hourAndMinute])
                     }
-                    
                     Section(header: Text("Payment")) {
                         Picker("Payment Method", selection: $isHourly) {
                             Text("Fixed Price").tag(false)
                             Text("Hourly Rate").tag(true)
                         }
                         .pickerStyle(.segmented)
-                        
                         HStack {
                             Text("$").bold().foregroundColor(.secondary)
                             TextField("0.00", text: $amountString)
                                 .keyboardType(.decimalPad)
-                            
-                            if isHourly {
-                                Text("/ hr").foregroundColor(.secondary)
-                            }
+                            if isHourly { Text("/ hr").foregroundColor(.secondary) }
                         }
                     }
                 }
                 .navigationTitle(editingGig == nil ? "New Gig" : "Edit Gig")
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button("Cancel") { showSheet = false }
-                    }
+                    ToolbarItem(placement: .topBarLeading) { Button("Cancel") { showSheet = false } }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Save") {
                             saveGig()
@@ -203,6 +142,49 @@ struct Gigs: View {
                 }
             }
         }
+    }
+    
+    // FORM HELPERS
+    func resetForm() {
+        title = ""
+        clientName = ""
+        dueDate = Date()
+        selectedGigStatus = .draft
+        amountString = ""
+        isHourly = false
+        editingGig = nil
+    }
+    
+    func saveGig() {
+        let finalAmount = Double(amountString) ?? 0.0
+        let finalPayType: PayType = isHourly ? .hourly(rate: finalAmount) : .fixed(amount: finalAmount)
+        let markedAsPaid = (selectedGigStatus == .completed)
+        
+        if let gig = editingGig {
+            var updated = gig
+            updated.title = title
+            updated.clientName = clientName
+            updated.deadline = deadlineDate
+            updated.status = selectedGigStatus
+            updated.payType = finalPayType
+            updated.isPaid = markedAsPaid
+            data.update(updated)
+            if deadlineAlerts && selectedGigStatus == .active {
+                NotificationManager.shared.scheduleDeadlineReminder(for: updated)
+            }
+        } else {
+            let newGig = Gig(title: title, clientName: clientName, deadline: deadlineDate, status: selectedGigStatus, payType: finalPayType, isPaid: markedAsPaid)
+            data.gigs.append(newGig)
+            if deadlineAlerts && selectedGigStatus == .active {
+                NotificationManager.shared.scheduleDeadlineReminder(for: newGig)
+            }
+        }
+    }
+    
+    var isFormInvalid: Bool {
+        title.trimmingCharacters(in: .whitespaces).isEmpty ||
+        clientName.trimmingCharacters(in: .whitespaces).isEmpty ||
+        amountString.isEmpty
     }
 }
 
