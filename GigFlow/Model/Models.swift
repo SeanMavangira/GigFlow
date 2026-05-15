@@ -324,6 +324,7 @@ struct PieSegment: Identifiable {
 struct TotalEarnedCard: View {
     let selectedPeriod: EarningsPeriod
     @Environment(GigData.self) private var data
+    @AppStorage("darkMode") var darkMode = false
     
     // Sum of ALL completed gigs up to now
     var paidTotal: Double {
@@ -343,14 +344,10 @@ struct TotalEarnedCard: View {
     var chartData: [(label: String, amount: Double, date: Date)] {
         let calendar = Calendar.current
         
-        // FILTER: Only include Gigs from the current year (to keep the chart readable)
-        // but include ALL months/weeks within that year, not just the "current" one.
         let filteredGigs = data.gigs.filter { gig in
             if selectedPeriod == .monthly {
-                // Shows all weeks in the current month
                 return gig.deadline.isInCurrentMonth && gig.status == .completed
             } else {
-                // Shows all months in the current year (including previous ones!)
                 return gig.deadline.isInCurrentYear && gig.status == .completed
             }
         }
@@ -364,12 +361,11 @@ struct TotalEarnedCard: View {
         }
         
         return grouped.map { (key: String, value: [Gig]) in
-            // We keep the date so we can sort chronologically instead of alphabetically
             let representativeDate = value.first?.deadline ?? Date()
             return (label: key, amount: value.reduce(0.0) { $0 + $1.amount }, date: representativeDate)
-        }.sorted { $0.date < $1.date } // This ensures Jan comes before Feb
+        }.sorted { $0.date < $1.date }
     }
-    @AppStorage("darkMode") var darkMode = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Total Earned")
@@ -378,33 +374,52 @@ struct TotalEarnedCard: View {
             
             Text(paidTotal, format: .currency(code: "USD"))
                 .font(.system(size: 34, weight: .bold))
+                .foregroundStyle(paidTotal > 0 ? (darkMode ? .white : .black) : .black)
             
             HStack(spacing: 15) {
                 Label("Paid: \(paidTotal, format: .currency(code: "USD"))", systemImage: "circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(paidTotal > 0 ? .green : .black)
                 Label("Pending: \(pendingTotal, format: .currency(code: "USD"))", systemImage: "circle.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(pendingTotal > 0 ? .orange : .black)
             }
             .font(.caption.bold())
             
-            Chart {
-                ForEach(chartData, id: \.label) { dataPoint in
-                    BarMark(
-                        x: .value("Time", dataPoint.label),
-                        y: .value("Amount", dataPoint.amount)
-                    )
-                    .foregroundStyle(
+            // --- UPDATED CHART AREA WITH DEMO VIEW ---
+            ZStack {
+                if chartData.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "chart.bar.fill")
+                            .font(.system(size: 40))
+                            .foregroundStyle(.gray.opacity(0.3))
+                        
+                        Text("No completed gigs for this \(selectedPeriod == .monthly ? "month" : "year")")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                            .italic()
+                    }
+                    .frame(maxWidth: .infinity)
+                } else {
+                    Chart {
+                        ForEach(chartData, id: \.label) { dataPoint in
+                            BarMark(
+                                x: .value("Time", dataPoint.label),
+                                y: .value("Amount", dataPoint.amount)
+                            )
+                            .foregroundStyle(
                                 darkMode ? Color(red: 0.1, green: 0.4, blue: 0.1).gradient : Color.green.gradient
                             )
-                    .cornerRadius(4)
+                            .cornerRadius(4)
+                        }
+                    }
                 }
             }
             .frame(height: 150)
             .padding(.top, 10)
         }
         .padding()
-        .background(RoundedRectangle(cornerRadius: 16).fill(.white)
-            .fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white)
         )
         .padding(.horizontal)
         .shadow(radius: 5)
@@ -415,52 +430,93 @@ struct PaymentStatusCard: View {
     let selectedPeriod: EarningsPeriod
     @Environment(GigData.self) private var data
     @AppStorage("darkMode") var darkMode = false
+    
     var body: some View {
+        // Calculate totals
         let paid = data.gigs.filter {
-                    (selectedPeriod == .monthly ? $0.deadline.isInCurrentMonth : $0.deadline.isInCurrentYear) && $0.status == .completed
-                }.reduce(0.0) { $0 + $1.amount }
-                
-                let pending = data.gigs.filter {
-                    (selectedPeriod == .monthly ? $0.deadline.isInCurrentMonth : $0.deadline.isInCurrentYear) && ($0.status == .pending || $0.status == .active)
-                }.reduce(0.0) { $0 + $1.amount }
-                
-                let pieData = [
-                    PieSegment(
-                        category: "Paid",
-                        amount: paid,
-                        color: darkMode ? Color(red: 0.1, green: 0.4, blue: 0.1) : .green
-                    ),
-                    PieSegment(
-                        category: "Pending",
-                        amount: pending,
-                        color: darkMode ? Color(red: 0.6, green: 0.3, blue: 0.0) : .orange
-                    )
-                ]
+            (selectedPeriod == .monthly ? $0.deadline.isInCurrentMonth : $0.deadline.isInCurrentYear) && $0.status == .completed
+        }.reduce(0.0) { $0 + $1.amount }
+        
+        let pending = data.gigs.filter {
+            (selectedPeriod == .monthly ? $0.deadline.isInCurrentMonth : $0.deadline.isInCurrentYear) && ($0.status == .pending || $0.status == .active)
+        }.reduce(0.0) { $0 + $1.amount }
+        
+        let total = paid + pending
+        
+        let pieData = [
+            PieSegment(
+                category: "Paid",
+                amount: paid,
+                color: darkMode ? Color(red: 0.1, green: 0.4, blue: 0.1) : .green
+            ),
+            PieSegment(
+                category: "Pending",
+                amount: pending,
+                color: darkMode ? Color(red: 0.6, green: 0.3, blue: 0.0) : .orange
+            )
+        ]
 
-        return VStack(alignment: .leading, spacing: 20) {
-            Text("Payment Status").font(.headline)
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Payment Status")
+                .font(.headline)
+            
             HStack(spacing: 30) {
-                Chart(pieData) { segment in
-                    SectorMark(angle: .value("Amount", segment.amount), innerRadius: .ratio(0.65), angularInset: 2)
-                        .foregroundStyle(segment.color).cornerRadius(5)
+                // --- CHART / PLACEHOLDER IMAGE ---
+                ZStack {
+                    if total == 0 {
+                        // Empty State: A light ring with an icon in the center
+                        
+                        Circle()
+                            .stroke(lineWidth: 12)
+                            .foregroundStyle(.gray.opacity(0.1))
+                        
+                        Image(systemName: "creditcard.and.123")
+                            .font(.title)
+                            .foregroundStyle(.gray.opacity(0.4))
+                    } else {
+                        // Live State: The Donut Chart
+                        Chart(pieData) { segment in
+                            SectorMark(
+                                angle: .value("Amount", segment.amount),
+                                innerRadius: .ratio(0.65),
+                                angularInset: 2
+                            )
+                            .foregroundStyle(segment.color)
+                            .cornerRadius(5)
+                        }
+                    }
                 }
                 .frame(width: 120, height: 120)
                 
+                // LEGEND
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(pieData) { segment in
                         HStack {
-                            Circle().fill(segment.color).frame(width: 8, height: 8)
-                            Text(segment.category).font(.caption).foregroundStyle(.secondary)
+                            Circle()
+                                .fill(total == 0 ? .gray.opacity(0.2) : segment.color)
+                                .frame(width: 8, height: 8)
+                            
+                            Text(segment.category)
+                                .font(.caption)
+                                .foregroundStyle(.black)
+                            
                             Spacer()
-                            Text(segment.amount, format: .currency(code: "USD")).font(.caption.bold()).monospacedDigit()
+                            
+                            Text(segment.amount, format: .currency(code: "USD"))
+                                .font(.caption.bold())
+                                .monospacedDigit()
+                                .foregroundStyle(total == 0 ? .black : (darkMode ? .white : .black))
                         }
                     }
                 }
             }
         }
-        .padding().background(RoundedRectangle(cornerRadius: 16).fill(.white)
-            .fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white)).padding(.horizontal)
-        
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white)
+        )
+        .padding(.horizontal)
         .shadow(radius: 5)
     }
 }
@@ -473,7 +529,7 @@ struct RecentTransactionsCard: View {
     var recentTransactions: [Gig] {
         data.gigs.filter { gig in
             let matchesPeriod = selectedPeriod == .monthly ? gig.deadline.isInCurrentMonth : gig.deadline.isInCurrentYear
-            let isValidStatus = gig.status == .completed || gig.status == .pending || gig.status == .active
+            let isValidStatus = gig.status == .completed || gig.status == .pending /*|| gig.status == .active*/
             return matchesPeriod && isValidStatus
         }.sorted(by: { $0.deadline > $1.deadline })
     }
