@@ -156,11 +156,17 @@ struct Gigs: View {
     }
     
     func saveGig() {
+        // 1. Convert the String amount to a Double (defaults to 0.0 if empty/invalid)
         let finalAmount = Double(amountString) ?? 0.0
+        
+        // 2. Determine the PayType based on the segmented picker state
         let finalPayType: PayType = isHourly ? .hourly(rate: finalAmount) : .fixed(amount: finalAmount)
+        
+        // 3. Logic for the isPaid boolean
         let markedAsPaid = (selectedGigStatus == .completed)
         
         if let gig = editingGig {
+            // --- EDITING EXISTING GIG ---
             var updated = gig
             updated.title = title
             updated.clientName = clientName
@@ -168,13 +174,31 @@ struct Gigs: View {
             updated.status = selectedGigStatus
             updated.payType = finalPayType
             updated.isPaid = markedAsPaid
+            
+            // Push the update to your Data class (triggers save automatically)
             data.update(updated)
+            
+            // Handle Notifications for edits
             if deadlineAlerts && selectedGigStatus == .active {
                 NotificationManager.shared.scheduleDeadlineReminder(for: updated)
             }
+            
         } else {
-            let newGig = Gig(title: title, clientName: clientName, deadline: deadlineDate, status: selectedGigStatus, payType: finalPayType, isPaid: markedAsPaid)
-            data.gigs.append(newGig)
+            // --- CREATING NEW GIG ---
+            let newGig = Gig(
+                title: title,
+                clientName: clientName,
+                deadline: deadlineDate,
+                status: selectedGigStatus,
+                payType: finalPayType,
+                timeSpentInSeconds: 0, // Fresh gigs start at zero
+                isPaid: markedAsPaid
+            )
+            
+            // Use your helper method to append and save
+            data.addGig(newGig)
+            
+            // Handle Notifications for new gigs
             if deadlineAlerts && selectedGigStatus == .active {
                 NotificationManager.shared.scheduleDeadlineReminder(for: newGig)
             }

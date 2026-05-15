@@ -47,7 +47,7 @@ enum GigPicker: String, CaseIterable, Identifiable, Codable {
 }
 
 enum PayType: Codable, Equatable {
-    case fixed(amount: Double)  
+    case fixed(amount: Double)
     case hourly(rate: Double)
     
     var isFixed: Bool {
@@ -115,16 +115,39 @@ struct GigRowView: View {
 
 @Observable
 class GigData {
-    var gigs: [Gig] = [
+    var gigs: [Gig] {
+        didSet {
+            save()
+        }
+    }
+    
+    var isRunning: Bool = false {
+        didSet { UserDefaults.standard.set(isRunning, forKey: "isRunning") }
+    }
+    
+    var timeDone: Int = 0 {
+        didSet { UserDefaults.standard.set(timeDone, forKey: "timeDone") }
+    }
+    
+    var selectedGig: Gig?
+
+    init() {
+        // Load Gigs
+        if let data = UserDefaults.standard.data(forKey: "saved_gigs"),
+           let decoded = try? JSONDecoder().decode([Gig].self, from: data) {
+            self.gigs = decoded
+        } else {
+            self.gigs = []
+        }
         
-        Gig(title: "Edit Video for John", clientName: "John Doe", deadline: Date(), status: .draft, payType: .fixed(amount: 500), isPaid: false),
-        
-        Gig(title: "Write Blog Post", clientName: "Sarah J.", deadline: Date(), status: .draft, payType: .hourly(rate: 7), isPaid: false),
-        
-        Gig(title: "Consultation", clientName: "Mike R.", deadline: Date(), status: .draft, payType: .fixed(amount: 100), isPaid: false),
-        
-        Gig(title: "Thumbnail Design", clientName: "Vlog Channel", deadline: Date(), status: .draft, payType: .fixed(amount: 50), isPaid: true)
-    ]
+        // Load State
+        self.isRunning = UserDefaults.standard.bool(forKey: "isRunning")
+        self.timeDone = UserDefaults.standard.integer(forKey: "timeDone")
+    }
+    
+    func addGig(_ gig: Gig) {
+        gigs.append(gig)
+    }
     
     func update(_ updatedGig: Gig) {
         if let index = gigs.firstIndex(where: { $0.id == updatedGig.id }) {
@@ -134,21 +157,28 @@ class GigData {
     
     func deleteGig(_ gig: Gig) {
         gigs.removeAll { $0.id == gig.id }
+        if selectedGig?.id == gig.id {
+            selectedGig = nil
+            isRunning = false
+            timeDone = 0
+        }
     }
     
-    var isRunning: Bool = false
-    var timeDone: Int = 0
-    var selectedGig: Gig?
+    private func save() {
+        if let encoded = try? JSONEncoder().encode(gigs) {
+            UserDefaults.standard.set(encoded, forKey: "saved_gigs")
+        }
+    }
 }
 
 struct GigCard: View {
     let gig: Gig
-    let liveSeconds: Double 
+    let liveSeconds: Double
     var onEdit: () -> Void
     
     @Environment(GigData.self) private var data
     @AppStorage("darkMode") var darkMode = false
-
+    
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
@@ -242,7 +272,7 @@ struct GigCard: View {
                             Text("$\(Int(rate))/hr")
                                 .font(.caption2)
                                 .foregroundColor(.gray)
-                                
+                            
                         case .fixed(let amount):
                             Text(amount, format: .currency(code: "USD"))
                                 .font(.headline)
@@ -306,7 +336,7 @@ extension Date {
         return calendar.component(.year, from: self) == calendar.component(.year, from: now)
         && calendar.component(.month, from: self) == calendar.component(.month, from: now)
     }
-
+    
     var isInCurrentYear: Bool {
         let calendar = Calendar.current
         let now = Date()
@@ -365,7 +395,7 @@ struct TotalEarnedCard: View {
             return (label: key, amount: value.reduce(0.0) { $0 + $1.amount }, date: representativeDate)
         }.sorted { $0.date < $1.date }
     }
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Total Earned")
@@ -455,7 +485,7 @@ struct PaymentStatusCard: View {
                 color: darkMode ? Color(red: 0.6, green: 0.3, blue: 0.0) : .orange
             )
         ]
-
+        
         VStack(alignment: .leading, spacing: 20) {
             Text("Payment Status")
                 .font(.headline)
@@ -533,7 +563,7 @@ struct RecentTransactionsCard: View {
             return matchesPeriod && isValidStatus
         }.sorted(by: { $0.deadline > $1.deadline })
     }
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {
             Text("Recent Transactions").font(.headline)
@@ -553,7 +583,7 @@ struct RecentTransactionsCard: View {
         .background(RoundedRectangle(cornerRadius: 16)
             .fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white))
         .padding(.horizontal)
-            .shadow( radius: 5)
+        .shadow( radius: 5)
     }
 }
 
