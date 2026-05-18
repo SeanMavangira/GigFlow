@@ -17,7 +17,7 @@ struct GigFlowApp: App {
     
     var body: some Scene {
         WindowGroup {
-           TabsItem()
+           WelcomePage()
                 .environment(data)
         }
     }
