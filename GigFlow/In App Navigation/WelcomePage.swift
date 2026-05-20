@@ -16,7 +16,13 @@ struct WelcomePage: View {
     var body: some View {
         NavigationStack{
             VStack{
+                Image("image1")
+                    .resizable()
+                    .frame(width: 300, height: 300)
+                    .cornerRadius(50)
+                    .padding()
                 Text(incomingText)
+                    .padding(.top, 30)
                     .font(.largeTitle)
                     .bold()
                     .onAppear {
@@ -39,9 +45,7 @@ struct WelcomePage: View {
                                 .bold()
                         }
                     }
-                    
-                
-                .offset(y: 300)
+                .offset(y: 100)
             }
         }
         
