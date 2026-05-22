@@ -34,7 +34,8 @@ struct WelcomePage: View {
                     }
                    
                     NavigationLink{
-                        
+                       SignInPage()
+                            .navigationBarBackButtonHidden()
                     }label: {
                         ZStack{
                             RoundedRectangle(cornerRadius: 16)
