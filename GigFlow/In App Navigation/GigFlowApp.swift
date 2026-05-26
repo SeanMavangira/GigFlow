@@ -12,13 +12,21 @@ struct GigFlowApp: App {
     @State private var data = GigData()
     
     init() {
-            NotificationManager.shared.requestAuthorization()
-        }
+        NotificationManager.shared.requestAuthorization()
+    }
+    
+    @AppStorage("isLoggedIn") private var isLoggedIn = false
     
     var body: some Scene {
         WindowGroup {
-           WelcomePage()
-                .environment(data)
+            Group {
+                if isLoggedIn {
+                    TabsItem()
+                } else {
+                    WelcomePage(isLoggedIn: $isLoggedIn)
+                }
+            }
+            .environment(data)
         }
     }
 }
