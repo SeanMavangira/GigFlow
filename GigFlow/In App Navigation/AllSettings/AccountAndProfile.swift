@@ -19,6 +19,7 @@ struct AccountAndProfile: View {
     
     @State private var selectedItem: PhotosPickerItem?
     @State private var showLogoutConfirmation = false
+    @AppStorage("isLoggedIn") private var isLoggedIn = false
     
     // Computed property to turn stored Data back into a viewable Image
     var profileImage: Image {
@@ -97,7 +98,9 @@ struct AccountAndProfile: View {
         // Logout Alert
         .alert("Logout", isPresented: $showLogoutConfirmation) {
             Button("Yes", role: .destructive) {
-                // Logout logic here
+                withAnimation(.easeInOut) {
+                    isLoggedIn = false
+                }
             }
             Button("No", role: .cancel) { }
         } message: {
