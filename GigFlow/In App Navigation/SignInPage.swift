@@ -10,6 +10,7 @@ import SwiftUI
 struct SignInPage: View {
     @State private var userName = ""
     @State private var password = ""
+    @Binding var isLoggedIn: Bool
     
     var isFilled: Bool{
         !userName.isEmpty && !password.isEmpty
@@ -43,20 +44,15 @@ struct SignInPage: View {
                     )
                     .padding()
                 
-                if !isFilled {
-                    Text("Please fill in all text fields to sign in.")
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                        .transition(.opacity)
-                }
-                NavigationLink{
-                    TabsItem()
-                        .navigationBarBackButtonHidden()
+                Button{
+                    withAnimation {
+                        isLoggedIn = true 
+                    }
                 }label: {
                     ZStack{
                         RoundedRectangle(cornerRadius: 16)
                             .frame(width: 150, height: 50)
-                            .foregroundStyle(.black)
+                            .foregroundStyle(isFilled ? .black : .gray.opacity(0.5))
                         Text("Sign In")
                             .foregroundStyle(.white)
                             .bold()
@@ -66,7 +62,7 @@ struct SignInPage: View {
                 .padding(.top, 50)
                 
                 NavigationLink{
-                    
+                    SignUpPage(isLoggedIn: $isLoggedIn)
                 }label: {
                     HStack{
                         Text("Dont have an account?")
@@ -85,6 +81,6 @@ struct SignInPage: View {
 }
 
 #Preview {
-    SignInPage()
+    SignInPage(isLoggedIn: .constant(false) )
         .environment(GigData())
 }

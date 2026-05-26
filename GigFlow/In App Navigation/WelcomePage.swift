@@ -12,6 +12,7 @@ struct WelcomePage: View {
     @State private var incomingText = ""
     private let fullText = "Welcome To GigFlow"
     @State private var hasAppeared = false
+    @Binding var isLoggedIn: Bool
     
     var body: some View {
         NavigationStack{
@@ -34,7 +35,7 @@ struct WelcomePage: View {
                     }
                    
                     NavigationLink{
-                       SignInPage()
+                        SignInPage(isLoggedIn: $isLoggedIn)
                             .navigationBarBackButtonHidden()
                     }label: {
                         ZStack{
@@ -64,7 +65,7 @@ struct WelcomePage: View {
 
 
 #Preview {
-    WelcomePage()
+    WelcomePage(isLoggedIn: .constant(false))
         .environment(GigData())
     
 }
