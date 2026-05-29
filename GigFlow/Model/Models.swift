@@ -137,6 +137,7 @@ class GigData {
            let decoded = try? JSONDecoder().decode([Gig].self, from: data) {
             self.gigs = decoded
         } else {
+            // Start completely empty on the first clean install
             self.gigs = []
         }
         
@@ -556,34 +557,81 @@ struct RecentTransactionsCard: View {
     @AppStorage("darkMode") var darkMode = false
     @Environment(GigData.self) private var data
     
-    var recentTransactions: [Gig] {
+    // 1. Gather filtered and sorted gigs
+    var filteredGigs: [Gig] {
         data.gigs.filter { gig in
             let matchesPeriod = selectedPeriod == .monthly ? gig.deadline.isInCurrentMonth : gig.deadline.isInCurrentYear
-            let isValidStatus = gig.status == .completed || gig.status == .pending /*|| gig.status == .active*/
+            let isValidStatus = gig.status == .completed || gig.status == .pending
             return matchesPeriod && isValidStatus
         }.sorted(by: { $0.deadline > $1.deadline })
     }
     
+    // 2. Group them by Month-Year String Keys
+    var groupedTransactions: [(month: String, gigs: [Gig])] {
+        let dictionary = Dictionary(grouping: filteredGigs) { $0.deadline.monthYearString }
+        
+        return dictionary.map { (month: $0.key, gigs: $0.value) }
+            .sorted { left, right in
+                let formatter = DateFormatter()
+                formatter.dateFormat = "MMMM yyyy"
+                let date1 = formatter.date(from: left.month) ?? Date.distantPast
+                let date2 = formatter.date(from: right.month) ?? Date.distantPast
+                return date1 > date2
+            }
+    }
+    
     var body: some View {
+        // REMOVED NAVIGATIONSTACK FROM HERE
         VStack(alignment: .leading, spacing: 15) {
-            Text("Recent Transactions").font(.headline)
+            HStack {
+                Text("Recent Transactions")
+                    .font(.headline)
+                
+                Spacer()
+                
+                
+                NavigationLink {
+                    AllTransactions()
+                } label: {
+                    Image(systemName: "arrow.forward")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.gray)
+                }
+            }
             
-            if recentTransactions.isEmpty {
-                ContentUnavailableView("No transactions yet", systemImage: "tray").frame(height: 200)
+            if filteredGigs.isEmpty {
+                ContentUnavailableView("No transactions yet", systemImage: "tray")
+                    .frame(height: 200)
             } else {
-                VStack(spacing: 0) {
-                    ForEach(Array(recentTransactions.prefix(5))) { gig in
-                        TransactionRow(gig: gig)
-                        if gig.id != recentTransactions.prefix(5).last?.id { Divider() }
+                VStack(alignment: .leading, spacing: 18) {
+                    ForEach(groupedTransactions, id: \.month) { group in
+                        VStack(alignment: .leading, spacing: 8) {
+                            
+                            Text(group.month)
+                                .font(.caption)
+                                .bold()
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 4)
+                            
+                            VStack(spacing: 0) {
+                                let limitedGigs = Array(group.gigs.prefix(5))
+                                
+                                ForEach(limitedGigs) { gig in
+                                    TransactionRow(gig: gig)
+                                    if gig.id != limitedGigs.last?.id { Divider() }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
         .padding()
+        // Your card container styling will now render perfectly!
         .background(RoundedRectangle(cornerRadius: 16)
             .fill(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : .white))
         .padding(.horizontal)
-        .shadow( radius: 5)
+        .shadow(radius: 5)
     }
 }
 
@@ -623,3 +671,50 @@ struct StatBox: View {
     }
 }
 
+extension Date {
+    var monthYearString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: self)
+    }
+}
+
+struct DetailedTransactionRow: View {
+    let gig: Gig
+    
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                // Transaction Title
+                Text(gig.title)
+                    .font(.body)
+                    .bold()
+                
+                // Associated Client Name Detail
+                Text(gig.clientName)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Spacer()
+            
+            // Status/Pricing Metadata Layout
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(gig.amount, format: .currency(code: "USD"))
+                    .font(.body)
+                    .bold()
+                    .foregroundStyle(gig.status == .completed ? .primary : Color.orange)
+                
+                // Exact Day and Shortened Time configuration labels
+                HStack(spacing: 6) {
+                    Text(gig.deadline.formatted(date: .abbreviated, time: .omitted))
+                    Text("•")
+                    Text(gig.deadline.formatted(date: .omitted, time: .shortened))
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 12) // Controls how tall each row feels inside the card
+    }
+}
