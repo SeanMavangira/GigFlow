@@ -32,9 +32,14 @@ struct TimerPage: View {
     }
     
     var hourlyGigs: [Gig] {
-        data.gigs.filter {
-            if case .hourly = $0.payType { return true }
-            return false
+        data.gigs.filter { gig in
+            // 1. Must be an hourly gig configuration
+            let isHourly = if case .hourly = gig.payType { true } else { false }
+            
+            // 2. STUCT RULE: Must be explicitly set to active status
+            let isActive = gig.status == .active
+            
+            return isHourly && isActive
         }
     }
     
@@ -71,34 +76,51 @@ struct TimerPage: View {
         VStack(spacing: 0) {
             // Gig Selection Menu
             VStack(alignment: .leading, spacing: 12) {
-                Menu {
-                    ForEach(hourlyGigs) { gig in
-                        Button {
-                            self.data.selectedGig = gig
-                        } label: {
-                            if case .hourly(let rate) = gig.payType {
-                                Text("\(gig.title) ($\(Int(rate))/hr)")
-                            } else {
-                                Text(gig.title)
-                            }
-                        }
-                    }
-                } label: {
+                if hourlyGigs.isEmpty {
+                    // Clear message if no eligible hourly gigs are found
                     HStack {
-                        Text(liveSelectedGig?.title ?? "Choose an hourly gig...")
-                            .foregroundColor(liveSelectedGig == nil ? .gray : .primary)
-                        Spacer()
-                        Image(systemName: "chevron.down")
-                            .font(.caption)
+                        Text("No active hourly gigs available")
                             .foregroundColor(.gray)
+                            .italic()
+                        Spacer()
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundColor(.red)
                     }
                     .padding()
                     .background(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : Color.white)
                     .cornerRadius(12)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.2), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.red.opacity(0.3), lineWidth: 1))
+                    .padding(.top, 8)
+                } else {
+                    Menu {
+                        ForEach(hourlyGigs) { gig in
+                            Button {
+                                self.data.selectedGig = gig
+                            } label: {
+                                if case .hourly(let rate) = gig.payType {
+                                    Text("\(gig.title) ($\(Int(rate))/hr)")
+                                } else {
+                                    Text(gig.title)
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Text(liveSelectedGig?.title ?? "Choose an hourly gig...")
+                                .foregroundColor(liveSelectedGig == nil ? .gray : .primary)
+                            Spacer()
+                            Image(systemName: "chevron.down")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        .padding()
+                        .background(darkMode ? Color(uiColor: .secondarySystemGroupedBackground) : Color.white)
+                        .cornerRadius(12)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.2), lineWidth: 1))
+                    }
+                    .shadow(radius: 5)
+                    .padding(.top, 8)
                 }
-                .shadow(radius: 5)
-                .padding(.top, 8)
             }
             .padding(.horizontal)
             .padding(.top, 15)
@@ -214,6 +236,15 @@ struct TimerPage: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text(alertMessage)
+        }
+        // Place this right below your .alert modifier block at the bottom of the file
+        .onChange(of: liveSelectedGig?.status) { oldValue, newValue in
+            if newValue == .completed {
+                isRunning = false
+                data.timeDone = 0
+                data.selectedGig = nil // Clears the selection slot
+                NotificationManager.shared.endLiveActivity()
+            }
         }
         .onReceive(systemTimer) { _ in
             if isRunning {
