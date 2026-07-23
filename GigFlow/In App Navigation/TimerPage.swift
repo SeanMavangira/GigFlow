@@ -123,7 +123,7 @@ struct TimerPage: View {
             .padding(.horizontal)
             .padding(.top, 15)
             
-            ScrollView {
+            
                 VStack(spacing: 30) {
                     // --- TIME TRACKING CARD (Width matched to Earnings Card) ---
                     VStack(spacing: 10) {
@@ -144,20 +144,18 @@ struct TimerPage: View {
                             if isRunning {
                                 isRunning = false
                                 playTimerFeedback(isStarting: false, isEnabled: isTimerSoundEnabled)
-                                var updatedGig = gig
-                                updatedGig.timeSpentInSeconds += Double(data.timeDone)
-                                data.update(updatedGig)
-                                data.timeDone = 0
                                 NotificationManager.shared.endLiveActivity()
                             } else {
                                 if gig.status == .active {
                                     isRunning = true
                                     playTimerFeedback(isStarting: true, isEnabled: isTimerSoundEnabled)
+
                                     if enableLiveActivity {
                                         let rate: Double = {
                                             if case .hourly(let r) = gig.payType { return r }
                                             return 0.0
                                         }()
+
                                         NotificationManager.shared.startLiveActivity(for: gig, rate: rate)
                                     }
                                 } else {
@@ -177,10 +175,11 @@ struct TimerPage: View {
                                 .frame(width: 140)
                                 .foregroundStyle(isRunning ? .red : (liveSelectedGig != nil ? .blue : .gray))
                                 .shadow(radius: 4)
-                            
+
                             VStack(spacing: 4) {
                                 Image(systemName: isRunning ? "pause.fill" : "play.fill")
                                     .font(.system(size: 35))
+
                                 Text(isRunning ? "Stop" : "Start")
                                     .font(.headline)
                             }
@@ -189,12 +188,22 @@ struct TimerPage: View {
                     }
                     
                     Button {
+                        if let gig = liveSelectedGig {
+                            var updatedGig = gig
+                            updatedGig.timeSpentInSeconds += Double(data.timeDone)
+                            data.update(updatedGig)
+                        }
+
                         isRunning = false
                         data.timeDone = 0
+                        NotificationManager.shared.endLiveActivity()
                     } label: {
                         Text("Reset Timer")
-                            .font(.subheadline).bold().foregroundColor(.gray)
-                            .padding(.vertical, 8).padding(.horizontal, 20)
+                            .font(.subheadline)
+                            .bold()
+                            .foregroundColor(.gray)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 20)
                             .background(Capsule().stroke(Color.gray.opacity(0.3), lineWidth: 1))
                     }
                     
@@ -227,7 +236,7 @@ struct TimerPage: View {
                 }
                 .padding(.horizontal, 20) // Parent padding controls both cards equally
                 .padding(.vertical, 20)
-            }
+            
         }
         .preferredColorScheme(darkMode ? .dark : .light)
         .alert(alertTitle, isPresented: $showStatusAlert) {
