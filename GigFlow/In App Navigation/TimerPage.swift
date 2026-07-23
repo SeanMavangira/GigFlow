@@ -15,7 +15,7 @@ import AVFoundation
 struct TimerPage: View {
     @Environment(GigData.self) private var data
     @AppStorage("enableLiveActivity") var enableLiveActivity = true
-    @AppStorage("isTimerSoundEnabled") private var isTimerSoundEnabled = true
+    @AppStorage("isTimerSoundEnabled") private var isTimerSoundEnabled = false
     @AppStorage("darkMode") var darkMode = false
     
     @State private var isRunning = false
