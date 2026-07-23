@@ -41,6 +41,7 @@ struct TabsItem: View {
             NavigationStack {
                 TimerPage()
                     .navigationTitle(Tabs.timer.rawValue)
+                    .navigationBarTitleDisplayMode(.large)
             }
             .tabItem {
                 Label("Timer", systemImage: "clock.fill")
