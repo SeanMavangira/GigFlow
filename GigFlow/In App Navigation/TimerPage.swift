@@ -44,17 +44,15 @@ struct TimerPage: View {
     }
     
     var currentEarnings: Double {
-        guard let gig = liveSelectedGig else { return 0.0 }
-        let totalSeconds = gig.timeSpentInSeconds + Double(data.timeDone)
-        
+        guard let gig = liveSelectedGig else { return 0 }
+
         switch gig.payType {
         case .hourly(let rate):
-            return (totalSeconds / 3600.0) * rate
+            return (Double(data.timeDone) / 3600.0) * rate
         case .fixed(let amount):
             return amount
         }
     }
-    
     // MARK: - Helper Functions
     
     func playTimerFeedback(isStarting: Bool, isEnabled: Bool) {
